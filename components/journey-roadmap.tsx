@@ -83,47 +83,51 @@ function DesktopRoadmap({
   const topRow = steps.filter((_, i) => i % 2 === 0);
   const bottomRow = steps.filter((_, i) => i % 2 !== 0);
 
-  return (
-    <div className="relative mx-auto max-w-5xl py-8">
-      {/* Avatar on active step */}
-      {activeIndex >= 0 && (
-        <div
-          className="absolute z-10 flex flex-col items-center"
-          style={{
-            top: activeIndex % 2 === 0 ? "-16px" : "auto",
-            bottom: activeIndex % 2 !== 0 ? "-16px" : "auto",
-            left: `calc(${Math.floor(activeIndex / 2) * (100 / Math.ceil(steps.length / 2))}% + ${100 / Math.ceil(steps.length / 2) / 2}% - 28px)`,
-          }}
-        >
-          <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-primary bg-card shadow-md">
-            <Image
-              src="/images/avatar.jpg"
-              alt="Your avatar"
-              fill
-              className="object-cover"
-            />
-          </div>
-        </div>
-      )}
+  // Total columns = number of cards in the larger row (top row)
+  const topCount = topRow.length;
 
-      {/* Starting line */}
-      <div className="flex items-center">
-        <div className="flex flex-col items-center gap-1 pr-4">
+  return (
+    <div className="relative py-8 overflow-x-auto">
+      <div className="inline-flex min-w-full items-center">
+        {/* Starting line */}
+        <div className="flex shrink-0 flex-col items-center gap-1 pr-4">
           <div className="h-0.5 w-8 bg-primary" />
           <span className="text-xs font-medium text-primary">Start</span>
         </div>
 
-        <div className="flex-1">
+        <div className="relative" style={{ minWidth: `${topCount * 200 + (topCount - 1) * 16}px` }}>
+          {/* Avatar on active step */}
+          {activeIndex >= 0 && (
+            <div
+              className="absolute z-10 flex flex-col items-center"
+              style={{
+                top: activeIndex % 2 === 0 ? "-20px" : "auto",
+                bottom: activeIndex % 2 !== 0 ? "-20px" : "auto",
+                left: `${Math.floor(activeIndex / 2) * (200 + 16) + 100 - 28}px`,
+              }}
+            >
+              <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-primary bg-card shadow-md">
+                <Image
+                  src="/images/avatar.jpg"
+                  alt="Your avatar"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Top row */}
           <div className="mb-4 flex items-stretch gap-4">
             {topRow.map((step) => (
-              <StepCard key={step.id} step={step} />
+              <div key={step.id} className="w-[200px] shrink-0">
+                <StepCard step={step} />
+              </div>
             ))}
           </div>
 
           {/* Connector line */}
           <div className="relative mx-8 h-0.5 bg-border">
-            {/* Progress fill */}
             <div
               className="absolute top-0 left-0 h-full bg-primary transition-all duration-500"
               style={{
@@ -135,16 +139,18 @@ function DesktopRoadmap({
             />
           </div>
 
-          {/* Bottom row */}
-          <div className="mt-4 flex items-stretch gap-4 px-12">
+          {/* Bottom row - offset to create zigzag */}
+          <div className="mt-4 flex items-stretch gap-4 pl-[108px]">
             {bottomRow.map((step) => (
-              <StepCard key={step.id} step={step} />
+              <div key={step.id} className="w-[200px] shrink-0">
+                <StepCard step={step} />
+              </div>
             ))}
           </div>
         </div>
 
         {/* Ending line */}
-        <div className="flex flex-col items-center gap-1 pl-4">
+        <div className="flex shrink-0 flex-col items-center gap-1 pl-4">
           <div className="h-0.5 w-8 bg-border" />
           <span className="text-xs font-medium text-muted-foreground">
             Finish
@@ -221,7 +227,7 @@ function StepCard({ step }: { step: JourneyStep }) {
 
   return (
     <div
-      className={`group flex flex-1 flex-col rounded-xl bg-card p-5 transition-all duration-200 ${
+      className={`group flex h-full flex-col rounded-xl bg-card p-5 transition-all duration-200 ${
         step.status === "active"
           ? "shadow-lg ring-2 ring-primary/25"
           : step.status === "upcoming"
