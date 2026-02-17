@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f8fc;
+  --foreground: #1a1d2e;
+  --card: #ffffff;
+  --card-foreground: #1a1d2e;
+  --primary: #0d9b83;
+  --primary-foreground: #ffffff;
+  --secondary: #e6faf5;
+  --secondary-foreground: #0d9b83;
+  --muted: #f0f2f7;
+  --muted-foreground: #6b7394;
+  --accent: #eef9f6;
+  --accent-foreground: #0d9b83;
+  --border: #e2e5ef;
+  --ring: #0d9b83;
+  --radius: 0.625rem;
+
+  --step-pink: #f472b6;
+  --step-blue: #60a5fa;
+  --step-green: #34d399;
+  --step-yellow: #fbbf24;
+  --step-peach: #fb923c;
+}
+
+.dark {
+  --background: #0f1117;
+  --foreground: #e8eaf0;
+  --card: #181b25;
+  --card-foreground: #e8eaf0;
+  --primary: #2ee6c8;
+  --primary-foreground: #0f1117;
+  --secondary: #1a2e2a;
+  --secondary-foreground: #2ee6c8;
+  --muted: #1e2130;
+  --muted-foreground: #8b8faa;
+  --accent: #1a2e2a;
+  --accent-foreground: #2ee6c8;
+  --border: #2a2d3d;
+  --ring: #2ee6c8;
+
+  --step-pink: #ec4899;
+  --step-blue: #3b82f6;
+  --step-green: #10b981;
+  --step-yellow: #f59e0b;
+  --step-peach: #f97316;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-step-pink: var(--step-pink);
+  --color-step-blue: var(--step-blue);
+  --color-step-green: var(--step-green);
+  --color-step-yellow: var(--step-yellow);
+  --color-step-peach: var(--step-peach);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --font-sans: 'Inter', 'Inter Fallback', sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+* {
+  border-color: var(--border);
+}
+
+/* Custom thin scrollbar for roadmap */
+.roadmap-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.roadmap-scroll:hover {
+  scrollbar-color: var(--muted-foreground) transparent;
+}
+.roadmap-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.roadmap-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+.roadmap-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+.roadmap-scroll:hover::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
 }
