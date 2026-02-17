@@ -155,8 +155,8 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 flex h-full flex-col border-r border-border bg-card transition-all duration-300 ease-in-out
-          lg:relative lg:translate-x-0
+        className={`fixed top-0 left-0 z-50 flex h-dvh flex-col border-r border-border bg-card transition-all duration-300 ease-in-out
+          lg:sticky lg:top-0 lg:z-30 lg:translate-x-0
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           w-64 ${collapsed ? "lg:w-16" : "lg:w-60"}
         `}
@@ -170,16 +170,15 @@ export default function Sidebar() {
           <CloseIcon className="h-4 w-4" />
         </button>
 
-        {/* Spacer top - on mobile shows brand, on desktop no logo */}
-        <div className="flex items-center px-5 pt-7 pb-2 lg:hidden">
+        {/* Mobile brand header */}
+        <div className="flex items-center px-5 pt-5 pb-2 lg:hidden">
           <span className="text-lg font-bold tracking-tight text-primary">
             ilmora
           </span>
         </div>
-        <div className="hidden lg:block pt-7 pb-2" />
 
-        {/* Nav wrapper - takes full remaining height, flex column with bottom pinned */}
-        <nav className="flex flex-1 flex-col px-3 pt-4 overflow-y-auto" aria-label="Main navigation">
+        {/* Nav wrapper - full height, flex column with bottom pinned */}
+        <nav className="flex flex-1 flex-col px-3 pt-3 lg:pt-4 overflow-y-auto" aria-label="Main navigation">
           {/* Top nav items */}
           <ul className="flex flex-col gap-1">
             {navItems.map((item) => {

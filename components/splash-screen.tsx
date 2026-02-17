@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-
-const SPLASH_KEY = "ilmora_splash_shown";
+import { useState, useEffect } from "react";
 
 export default function SplashScreen({
   onComplete,
@@ -11,25 +9,17 @@ export default function SplashScreen({
 }) {
   const [phase, setPhase] = useState<"enter" | "hold" | "exit">("enter");
 
-  const stableComplete = useCallback(onComplete, [onComplete]);
-
   useEffect(() => {
-    // If already shown this session, skip immediately
-    if (sessionStorage.getItem(SPLASH_KEY)) {
-      stableComplete();
-      return;
-    }
-
-    sessionStorage.setItem(SPLASH_KEY, "1");
     const enterTimer = setTimeout(() => setPhase("hold"), 600);
     const holdTimer = setTimeout(() => setPhase("exit"), 1800);
-    const exitTimer = setTimeout(() => stableComplete(), 2400);
+    const exitTimer = setTimeout(() => onComplete(), 2400);
     return () => {
       clearTimeout(enterTimer);
       clearTimeout(holdTimer);
       clearTimeout(exitTimer);
     };
-  }, [stableComplete]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div
