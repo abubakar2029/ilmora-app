@@ -17,11 +17,11 @@
   --ring: #0d9b83;
   --radius: 0.625rem;
 
-  --step-pink: #ffc2d1;
-  --step-blue: #a8d8f0;
-  --step-green: #a8f0c2;
-  --step-yellow: #f5e6a3;
-  --step-peach: #fcc8b2;
+  --step-pink: #f472b6;
+  --step-blue: #60a5fa;
+  --step-green: #34d399;
+  --step-yellow: #fbbf24;
+  --step-peach: #fb923c;
 }
 
 .dark {
@@ -40,11 +40,11 @@
   --border: #2a2d3d;
   --ring: #2ee6c8;
 
-  --step-pink: #a34466;
-  --step-blue: #3a7ca5;
-  --step-green: #3a8a5c;
-  --step-yellow: #a89540;
-  --step-peach: #b87550;
+  --step-pink: #ec4899;
+  --step-blue: #3b82f6;
+  --step-green: #10b981;
+  --step-yellow: #f59e0b;
+  --step-peach: #f97316;
 }
 
 @theme inline {

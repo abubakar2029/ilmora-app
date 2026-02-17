@@ -10,20 +10,12 @@ export interface JourneyStep {
   color: string;
 }
 
-const STEP_COLORS: Record<string, string> = {
-  pink: "bg-step-pink",
-  blue: "bg-step-blue",
-  green: "bg-step-green",
-  yellow: "bg-step-yellow",
-  peach: "bg-step-peach",
-};
-
-const STEP_BORDER_COLORS: Record<string, string> = {
-  pink: "border-step-pink",
-  blue: "border-step-blue",
-  green: "border-step-green",
-  yellow: "border-step-yellow",
-  peach: "border-step-peach",
+const STEP_STYLES: Record<string, { bg: string; accent: string; text: string }> = {
+  pink: { bg: "bg-step-pink/25", accent: "bg-step-pink", text: "text-step-pink" },
+  blue: { bg: "bg-step-blue/25", accent: "bg-step-blue", text: "text-step-blue" },
+  green: { bg: "bg-step-green/25", accent: "bg-step-green", text: "text-step-green" },
+  yellow: { bg: "bg-step-yellow/25", accent: "bg-step-yellow", text: "text-step-yellow" },
+  peach: { bg: "bg-step-peach/25", accent: "bg-step-peach", text: "text-step-peach" },
 };
 
 function CheckIcon({ className }: { className?: string }) {
@@ -225,22 +217,25 @@ function MobileRoadmap({
 }
 
 function StepCard({ step }: { step: JourneyStep }) {
-  const bgColor = STEP_COLORS[step.color] || "bg-muted";
-  const borderColor = STEP_BORDER_COLORS[step.color] || "border-border";
+  const style = STEP_STYLES[step.color] || { bg: "bg-muted/40", accent: "bg-muted", text: "text-muted-foreground" };
 
   return (
     <div
-      className={`flex flex-1 flex-col rounded-lg border-2 ${borderColor} ${bgColor} p-4 transition-all ${
+      className={`group flex flex-1 flex-col rounded-xl bg-card p-5 transition-all duration-200 ${
         step.status === "active"
-          ? "shadow-lg ring-2 ring-primary/30 scale-[1.02]"
+          ? "shadow-lg ring-2 ring-primary/25"
           : step.status === "upcoming"
-            ? "opacity-60"
-            : ""
+            ? "opacity-50"
+            : "shadow-sm hover:shadow-md"
       }`}
     >
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-semibold text-foreground/50">
-          Step {step.id}
+      {/* Color accent bar */}
+      <div className={`mb-4 h-1 w-10 rounded-full ${style.accent}`} />
+
+      {/* Step number + status */}
+      <div className="mb-3 flex items-center justify-between">
+        <span className={`flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold ${style.bg} ${style.text}`}>
+          {step.id}
         </span>
         {step.status === "completed" && (
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
@@ -254,11 +249,15 @@ function StepCard({ step }: { step: JourneyStep }) {
           </span>
         )}
         {step.status === "upcoming" && (
-          <LockIcon className="h-4 w-4 text-muted-foreground" />
+          <LockIcon className="h-4 w-4 text-muted-foreground/50" />
         )}
       </div>
-      <h3 className="text-sm font-semibold text-foreground">{step.title}</h3>
-      <p className="mt-1 text-xs leading-relaxed text-foreground/70">
+
+      {/* Title */}
+      <h3 className="text-sm font-semibold text-foreground leading-snug">{step.title}</h3>
+
+      {/* Description */}
+      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
         {step.description}
       </p>
     </div>

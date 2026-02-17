@@ -178,8 +178,9 @@ export default function Sidebar() {
         </div>
         <div className="hidden lg:block pt-7 pb-2" />
 
-        {/* Nav items */}
-        <nav className="flex flex-1 flex-col px-3 pt-4" aria-label="Main navigation">
+        {/* Nav wrapper - takes full remaining height, flex column with bottom pinned */}
+        <nav className="flex flex-1 flex-col px-3 pt-4 overflow-y-auto" aria-label="Main navigation">
+          {/* Top nav items */}
           <ul className="flex flex-col gap-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -203,7 +204,6 @@ export default function Sidebar() {
                     <span className={`${collapsed ? "lg:hidden" : ""}`}>
                       {item.label}
                     </span>
-                    {/* Tooltip on collapsed desktop */}
                     {collapsed && (
                       <span className="absolute left-full ml-2 hidden rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-lg lg:group-hover:block">
                         {item.label}
@@ -215,8 +215,11 @@ export default function Sidebar() {
             })}
           </ul>
 
-          {/* Auth link */}
-          <div className="mt-auto pb-4">
+          {/* Spacer pushes everything below to the bottom */}
+          <div className="flex-1" />
+
+          {/* Auth link - pinned above social links */}
+          <div className="pb-3">
             {isLoggedIn ? (
               <button
                 className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${collapsed ? "lg:justify-center lg:px-0" : ""}`}
@@ -255,43 +258,43 @@ export default function Sidebar() {
               </Link>
             )}
           </div>
+
+          {/* Social links - pinned at very bottom */}
+          <div className={`relative flex items-center border-t border-border py-4 ${collapsed ? "lg:flex-col lg:gap-2 lg:justify-center" : "gap-3"}`}>
+            <button
+              onClick={handleCopyEmail}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
+              aria-label="Copy email address"
+            >
+              <MailIcon className="h-4 w-4" />
+            </button>
+            <a
+              href={LINKEDIN_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-[#0077b5]/15 hover:text-[#0077b5]"
+              aria-label="Visit LinkedIn profile"
+            >
+              <LinkedInIcon className="h-4 w-4" />
+            </a>
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-[#25D366]/15 hover:text-[#25D366]"
+              aria-label="Open WhatsApp chat"
+            >
+              <WhatsAppIcon className="h-4 w-4" />
+            </a>
+
+            {/* Copied toast */}
+            {copied && (
+              <span className={`absolute -top-9 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-lg ${collapsed ? "left-1/2 -translate-x-1/2" : "left-0"}`}>
+                Copied!
+              </span>
+            )}
+          </div>
         </nav>
-
-        {/* Social links */}
-        <div className={`relative flex items-center border-t border-border px-4 py-4 ${collapsed ? "lg:flex-col lg:gap-2 lg:px-0 lg:py-3" : "gap-3"}`}>
-          <button
-            onClick={handleCopyEmail}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
-            aria-label="Copy email address"
-          >
-            <MailIcon className="h-4 w-4" />
-          </button>
-          <a
-            href={LINKEDIN_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-[#0077b5]/15 hover:text-[#0077b5]"
-            aria-label="Visit LinkedIn profile"
-          >
-            <LinkedInIcon className="h-4 w-4" />
-          </a>
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-[#25D366]/15 hover:text-[#25D366]"
-            aria-label="Open WhatsApp chat"
-          >
-            <WhatsAppIcon className="h-4 w-4" />
-          </a>
-
-          {/* Copied toast */}
-          {copied && (
-            <span className={`absolute -top-9 rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-lg ${collapsed ? "left-1/2 -translate-x-1/2" : "left-4"}`}>
-              Copied!
-            </span>
-          )}
-        </div>
 
         {/* Desktop collapse toggle arrow -- on the right border */}
         <button
