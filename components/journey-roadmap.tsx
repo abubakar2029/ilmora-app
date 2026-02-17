@@ -83,7 +83,7 @@ function DesktopRoadmap({
   const topRow = steps.filter((_, i) => i % 2 === 0);
   const bottomRow = steps.filter((_, i) => i % 2 !== 0);
 
-  const CARD_MIN = 240; // minimum card width in px
+  const CARD_MIN = 250; // minimum card width in px
   const GAP = 40; // gap-10 = 40px
   const topCount = topRow.length;
   const innerWidth = topCount * CARD_MIN + (topCount - 1) * GAP;
@@ -236,13 +236,12 @@ function StepCard({ step }: { step: JourneyStep }) {
 
   return (
     <div
-      className={`group flex h-full flex-col rounded-xl bg-card p-5 transition-all duration-200 ${
-        step.status === "active"
+      className={`group flex h-full flex-col rounded-xl bg-card p-5 transition-all duration-200 ${step.status === "active"
           ? "shadow-lg ring-2 ring-primary/25"
           : step.status === "upcoming"
             ? "opacity-50"
             : "shadow-sm hover:shadow-md"
-      }`}
+        }`}
     >
       {/* Color accent bar */}
       <div className={`mb-4 h-1 w-10 rounded-full ${style.accent}`} />
