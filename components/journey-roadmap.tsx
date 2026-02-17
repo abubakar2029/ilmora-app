@@ -129,7 +129,7 @@ function DesktopRoadmap({
           {/* Top row */}
           <div className="mb-6 flex items-stretch gap-10">
             {topRow.map((step) => (
-              <div key={step.id} className="min-w-[240px] flex-1">
+              <div key={step.id} className="min-w-[250px] shrink-0">
                 <StepCard step={step} />
               </div>
             ))}
@@ -151,7 +151,7 @@ function DesktopRoadmap({
           {/* Bottom row - offset to create zigzag */}
           <div className="mt-6 flex items-stretch gap-10" style={{ paddingLeft: `${CARD_MIN / 2 + GAP / 2}px` }}>
             {bottomRow.map((step) => (
-              <div key={step.id} className="min-w-[240px] flex-1">
+              <div key={step.id} className="min-w-[250px] shrink-0">
                 <StepCard step={step} />
               </div>
             ))}
@@ -237,10 +237,10 @@ function StepCard({ step }: { step: JourneyStep }) {
   return (
     <div
       className={`group flex h-full flex-col rounded-xl bg-card p-5 transition-all duration-200 ${step.status === "active"
-          ? "shadow-lg ring-2 ring-primary/25"
-          : step.status === "upcoming"
-            ? "opacity-50"
-            : "shadow-sm hover:shadow-md"
+        ? "shadow-lg ring-2 ring-primary/25"
+        : step.status === "upcoming"
+          ? "opacity-50"
+          : "shadow-sm hover:shadow-md"
         }`}
     >
       {/* Color accent bar */}
