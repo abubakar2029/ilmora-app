@@ -83,14 +83,14 @@ function DesktopRoadmap({
   const topRow = steps.filter((_, i) => i % 2 === 0);
   const bottomRow = steps.filter((_, i) => i % 2 !== 0);
 
-  const CARD_MIN = 230; // minimum card width in px
-  const GAP = 24; // gap-6 = 24px
+  const CARD_MIN = 240; // minimum card width in px
+  const GAP = 40; // gap-10 = 40px
   const topCount = topRow.length;
   const innerWidth = topCount * CARD_MIN + (topCount - 1) * GAP;
 
   return (
     <div className="roadmap-scroll relative overflow-x-auto py-8 pb-4">
-      <div className="inline-flex items-center px-2" style={{ minWidth: `${innerWidth + 140}px` }}>
+      <div className="inline-flex items-center px-4" style={{ minWidth: `${innerWidth + 160}px` }}>
         {/* Starting line */}
         <div className="flex shrink-0 flex-col items-center gap-1 pr-4">
           <div className="h-0.5 w-8 bg-primary" />
@@ -127,9 +127,9 @@ function DesktopRoadmap({
           })()}
 
           {/* Top row */}
-          <div className="mb-4 flex items-stretch gap-6">
+          <div className="mb-6 flex items-stretch gap-10">
             {topRow.map((step) => (
-              <div key={step.id} className="min-w-[230px] flex-1">
+              <div key={step.id} className="min-w-[240px] flex-1">
                 <StepCard step={step} />
               </div>
             ))}
@@ -149,9 +149,9 @@ function DesktopRoadmap({
           </div>
 
           {/* Bottom row - offset to create zigzag */}
-          <div className="mt-4 flex items-stretch gap-6" style={{ paddingLeft: `${CARD_MIN / 2 + GAP / 2}px` }}>
+          <div className="mt-6 flex items-stretch gap-10" style={{ paddingLeft: `${CARD_MIN / 2 + GAP / 2}px` }}>
             {bottomRow.map((step) => (
-              <div key={step.id} className="min-w-[230px] flex-1">
+              <div key={step.id} className="min-w-[240px] flex-1">
                 <StepCard step={step} />
               </div>
             ))}
