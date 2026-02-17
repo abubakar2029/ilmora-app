@@ -12,7 +12,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0e7c6b",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0d9b83" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1117" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -23,7 +26,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var mode = localStorage.getItem('theme');
+                  if (mode === 'dark' || (!mode && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.className} ${geistMono.className} antialiased`}>
         {children}
       </body>

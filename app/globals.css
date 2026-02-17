@@ -1,27 +1,50 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8f9fb;
-  --foreground: #1a1d23;
+  --background: #f7f8fc;
+  --foreground: #1a1d2e;
   --card: #ffffff;
-  --card-foreground: #1a1d23;
-  --primary: #0e7c6b;
+  --card-foreground: #1a1d2e;
+  --primary: #0d9b83;
   --primary-foreground: #ffffff;
-  --secondary: #e8f5f2;
-  --secondary-foreground: #0e7c6b;
-  --muted: #f1f3f5;
-  --muted-foreground: #6b7280;
-  --accent: #f0fdf9;
-  --accent-foreground: #0e7c6b;
-  --border: #e5e7eb;
-  --ring: #0e7c6b;
+  --secondary: #e6faf5;
+  --secondary-foreground: #0d9b83;
+  --muted: #f0f2f7;
+  --muted-foreground: #6b7394;
+  --accent: #eef9f6;
+  --accent-foreground: #0d9b83;
+  --border: #e2e5ef;
+  --ring: #0d9b83;
   --radius: 0.625rem;
 
-  --step-pink: #f9d5dc;
-  --step-blue: #c8def5;
-  --step-green: #c8f0d4;
-  --step-yellow: #f5edc8;
-  --step-peach: #f5d5c8;
+  --step-pink: #ffc2d1;
+  --step-blue: #a8d8f0;
+  --step-green: #a8f0c2;
+  --step-yellow: #f5e6a3;
+  --step-peach: #fcc8b2;
+}
+
+.dark {
+  --background: #0f1117;
+  --foreground: #e8eaf0;
+  --card: #181b25;
+  --card-foreground: #e8eaf0;
+  --primary: #2ee6c8;
+  --primary-foreground: #0f1117;
+  --secondary: #1a2e2a;
+  --secondary-foreground: #2ee6c8;
+  --muted: #1e2130;
+  --muted-foreground: #8b8faa;
+  --accent: #1a2e2a;
+  --accent-foreground: #2ee6c8;
+  --border: #2a2d3d;
+  --ring: #2ee6c8;
+
+  --step-pink: #a34466;
+  --step-blue: #3a7ca5;
+  --step-green: #3a8a5c;
+  --step-yellow: #a89540;
+  --step-peach: #b87550;
 }
 
 @theme inline {
