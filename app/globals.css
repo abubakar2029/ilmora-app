@@ -83,3 +83,26 @@ body {
 * {
   border-color: var(--border);
 }
+
+/* Custom thin scrollbar for roadmap */
+.roadmap-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.roadmap-scroll:hover {
+  scrollbar-color: var(--muted-foreground) transparent;
+}
+.roadmap-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.roadmap-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 999px;
+}
+.roadmap-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+.roadmap-scroll:hover::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+}
