@@ -83,44 +83,53 @@ function DesktopRoadmap({
   const topRow = steps.filter((_, i) => i % 2 === 0);
   const bottomRow = steps.filter((_, i) => i % 2 !== 0);
 
-  // Total columns = number of cards in the larger row (top row)
+  const CARD_MIN = 220; // minimum card width in px
+  const GAP = 16; // gap-4 = 16px
   const topCount = topRow.length;
+  const innerWidth = topCount * CARD_MIN + (topCount - 1) * GAP;
 
   return (
-    <div className="relative py-8 overflow-x-auto">
-      <div className="inline-flex min-w-full items-center">
+    <div className="relative py-8 overflow-x-auto" style={{ scrollbarGutter: "stable" }}>
+      <div className="inline-flex items-center" style={{ minWidth: `${innerWidth + 120}px` }}>
         {/* Starting line */}
         <div className="flex shrink-0 flex-col items-center gap-1 pr-4">
           <div className="h-0.5 w-8 bg-primary" />
           <span className="text-xs font-medium text-primary">Start</span>
         </div>
 
-        <div className="relative" style={{ minWidth: `${topCount * 200 + (topCount - 1) * 16}px` }}>
+        <div className="relative flex-1" style={{ minWidth: `${innerWidth}px` }}>
           {/* Avatar on active step */}
-          {activeIndex >= 0 && (
-            <div
-              className="absolute z-10 flex flex-col items-center"
-              style={{
-                top: activeIndex % 2 === 0 ? "-20px" : "auto",
-                bottom: activeIndex % 2 !== 0 ? "-20px" : "auto",
-                left: `${Math.floor(activeIndex / 2) * (200 + 16) + 100 - 28}px`,
-              }}
-            >
-              <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-primary bg-card shadow-md">
-                <Image
-                  src="/images/avatar.jpg"
-                  alt="Your avatar"
-                  fill
-                  className="object-cover"
-                />
+          {activeIndex >= 0 && (() => {
+            const col = Math.floor(activeIndex / 2);
+            const isTop = activeIndex % 2 === 0;
+            const leftPx = isTop
+              ? `calc(${(col / topCount) * 100}% + ${CARD_MIN / 2}px)`
+              : `calc(${(col / topCount) * 100}% + ${CARD_MIN / 2 + CARD_MIN / 2 + GAP / 2}px)`;
+            return (
+              <div
+                className="absolute z-10 flex flex-col items-center -translate-x-1/2"
+                style={{
+                  top: isTop ? "-20px" : "auto",
+                  bottom: !isTop ? "-20px" : "auto",
+                  left: leftPx,
+                }}
+              >
+                <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-primary bg-card shadow-md">
+                  <Image
+                    src="/images/avatar.jpg"
+                    alt="Your avatar"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Top row */}
           <div className="mb-4 flex items-stretch gap-4">
             {topRow.map((step) => (
-              <div key={step.id} className="w-[200px] shrink-0">
+              <div key={step.id} className="min-w-[220px] flex-1">
                 <StepCard step={step} />
               </div>
             ))}
@@ -140,9 +149,9 @@ function DesktopRoadmap({
           </div>
 
           {/* Bottom row - offset to create zigzag */}
-          <div className="mt-4 flex items-stretch gap-4 pl-[108px]">
+          <div className="mt-4 flex items-stretch gap-4" style={{ paddingLeft: `${CARD_MIN / 2 + GAP / 2}px` }}>
             {bottomRow.map((step) => (
-              <div key={step.id} className="w-[200px] shrink-0">
+              <div key={step.id} className="min-w-[220px] flex-1">
                 <StepCard step={step} />
               </div>
             ))}

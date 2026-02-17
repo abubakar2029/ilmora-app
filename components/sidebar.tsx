@@ -197,7 +197,7 @@ export default function Sidebar() {
                     `}
                     title={collapsed ? item.label : undefined}
                   >
-                    <span className={`shrink-0 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}>
+                    <span className={`hidden lg:inline-flex shrink-0 ${isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}>
                       {item.icon}
                     </span>
                     <span className={`${collapsed ? "lg:hidden" : ""}`}>
@@ -224,7 +224,7 @@ export default function Sidebar() {
                 className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${collapsed ? "lg:justify-center lg:px-0" : ""}`}
                 title={collapsed ? "Logout" : undefined}
               >
-                <LogoutIcon className="h-5 w-5 shrink-0" />
+                <LogoutIcon className="hidden lg:block h-5 w-5 shrink-0" />
                 <span className={`${collapsed ? "lg:hidden" : ""}`}>Logout</span>
                 {collapsed && (
                   <span className="absolute left-full ml-2 hidden rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-lg lg:group-hover:block">
@@ -245,7 +245,7 @@ export default function Sidebar() {
                 `}
                 title={collapsed ? "Login / Sign Up" : undefined}
               >
-                <LoginIcon className={`h-5 w-5 shrink-0 ${pathname === "/login" ? "text-primary" : ""}`} />
+                <LoginIcon className={`hidden lg:block h-5 w-5 shrink-0 ${pathname === "/login" ? "text-primary" : ""}`} />
                 <span className={`${collapsed ? "lg:hidden" : ""}`}>
                   Login / Sign Up
                 </span>

@@ -40,12 +40,47 @@ const journeySteps: JourneyStep[] = [
     status: "upcoming",
     color: "green",
   },
+  {
+    id: 6,
+    title: "Peer Review",
+    description: "Review and critique work from peers to sharpen your analysis skills.",
+    status: "upcoming",
+    color: "pink",
+  },
+  {
+    id: 7,
+    title: "Case Studies",
+    description: "Dive into real-world case studies and apply your knowledge practically.",
+    status: "upcoming",
+    color: "yellow",
+  },
+  {
+    id: 8,
+    title: "Research Methods",
+    description: "Learn structured research techniques for deeper academic exploration.",
+    status: "upcoming",
+    color: "blue",
+  },
+  {
+    id: 9,
+    title: "Capstone Project",
+    description: "Bring everything together in a comprehensive capstone project.",
+    status: "upcoming",
+    color: "peach",
+  },
+  {
+    id: 10,
+    title: "Certification",
+    description: "Earn your certificate and showcase your verified knowledge.",
+    status: "upcoming",
+    color: "green",
+  },
 ];
 
 export default function MyJourneyPage() {
   return (
     <AppShell>
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto">
         <header className="mb-10">
           <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl text-balance">
             My Journey
