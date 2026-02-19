@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
+import SessionProvider from "@/components/session-provider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -44,7 +45,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} ${geistMono.className} antialiased`}>
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

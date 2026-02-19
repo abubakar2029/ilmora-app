@@ -119,6 +119,7 @@ function DesktopRoadmap({
                     src="/images/avatar.jpg"
                     alt="Your avatar"
                     fill
+                    sizes="56px"
                     className="object-cover"
                   />
                 </div>
@@ -209,6 +210,7 @@ function MobileRoadmap({
                     src="/images/avatar.jpg"
                     alt="Your avatar"
                     fill
+                    sizes="48px"
                     className="object-cover"
                   />
                 </div>
