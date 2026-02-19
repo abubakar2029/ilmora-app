@@ -46,7 +46,7 @@ export default function SignupForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       {/* Name row */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <div className="flex flex-1 flex-col gap-1.5">
           <label
             htmlFor="signup-first-name"

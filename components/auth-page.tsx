@@ -14,7 +14,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
   const [isLoading] = useState(false);
 
   return (
-    <div className="mx-auto w-full max-w-md">
+    <div className="mx-auto w-full max-w-lg">
       {/* Header */}
       <div className="mb-8 text-center">
         <Link href="/my-journey" className="inline-block">
