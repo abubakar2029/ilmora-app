@@ -2,7 +2,8 @@ import NextAuth, { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
 import FacebookProvider from "next-auth/providers/facebook";
-import { graphqlClient, OAUTH_LOGIN_MUTATION } from "@/lib/graphql";
+import { graphqlClient, UNIFIED_AUTH_MUTATION } from "@/lib/graphql";
+import { LOGIN_MUTATION } from "@/graphQL/accounts";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -21,23 +22,30 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ account }) {
-      if (account?.access_token && account.provider) {
-        try {
-          const response = await graphqlClient.request(OAUTH_LOGIN_MUTATION, {
-            token: account.access_token,
-            provider: account.provider, // "google" | "github" | "facebook"
-          });
-          console.log(`OAuth (${account.provider}) GraphQL response:`, response);
-        } catch (error) {
-          console.error(`OAuth (${account.provider}) GraphQL error:`, error);
-          // Still allow sign-in even if GraphQL call fails
+      if (account && account.provider) {
+        const token = account.id_token || account.access_token;
+        if (token) {
+          try {
+            const response = await graphqlClient.request(LOGIN_MUTATION, {
+              idToken: token,
+              provider: account.provider, // "google" | "github" | "facebook"
+            });
+            if (response && response.login && response.login.user) {
+              console.log(`OAuth (${account.provider}) user:`, response.login);
+            } else if (response && response.signup && response.signup.user) {
+              console.log(`OAuth (${account.provider}) user:`, response.signup.user);
+            }
+          } catch (error) {
+            console.error(`OAuth (${account.provider}) GraphQL error:`, error);
+          }
         }
       }
+      
       return true;
     },
     async jwt({ token, account }) {
       if (account) {
-        token.accessToken = account.access_token;
+        token.accessToken = account.id_token;
         token.provider = account.provider;
       }
       return token;

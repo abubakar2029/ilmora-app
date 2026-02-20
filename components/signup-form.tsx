@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { graphqlClient, SIGNUP_MUTATION } from "@/lib/graphql";
+import { extractErrorMessage, graphqlClient } from "@/lib/graphql";
 import { useToast } from "@/components/toast";
+import { SIGNUP_MUTATION } from "@/graphQL/accounts";
 
-interface SignupFormData {
+interface FormData {
   firstName: string;
   lastName: string;
   email: string;
@@ -15,14 +16,15 @@ interface SignupFormData {
 export default function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<SignupFormData>();
+  } = useForm<FormData>();
 
-  const onSubmit = async (data: SignupFormData) => {
+  const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
       const response = await graphqlClient.request(SIGNUP_MUTATION, {
@@ -30,13 +32,13 @@ export default function SignupForm() {
         lastName: data.lastName,
         email: data.email,
         password: data.password,
+        provider: "email",
       });
       console.log("Signup response:", response);
       showToast("Account created successfully!", "success");
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Signup failed";
-      console.error("Signup error:", error);
+      const message = extractErrorMessage(error);
+      console.error(error);
       showToast(message, "error");
     } finally {
       setIsLoading(false);
@@ -59,9 +61,8 @@ export default function SignupForm() {
             type="text"
             autoComplete="given-name"
             placeholder="John"
-            className={`rounded-lg border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring ${
-              errors.firstName ? "border-red-400" : "border-border"
-            }`}
+            className={`rounded-lg border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring ${errors.firstName ? "border-red-400" : "border-border"
+              }`}
             {...register("firstName", {
               required: "First name is required",
             })}
@@ -82,9 +83,8 @@ export default function SignupForm() {
             type="text"
             autoComplete="family-name"
             placeholder="Doe"
-            className={`rounded-lg border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring ${
-              errors.lastName ? "border-red-400" : "border-border"
-            }`}
+            className={`rounded-lg border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring ${errors.lastName ? "border-red-400" : "border-border"
+              }`}
             {...register("lastName", {
               required: "Last name is required",
             })}
@@ -108,9 +108,8 @@ export default function SignupForm() {
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
-          className={`rounded-lg border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring ${
-            errors.email ? "border-red-400" : "border-border"
-          }`}
+          className={`rounded-lg border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring ${errors.email ? "border-red-400" : "border-border"
+            }`}
           {...register("email", {
             required: "Email is required",
             pattern: {
@@ -134,12 +133,11 @@ export default function SignupForm() {
         </label>
         <input
           id="signup-password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           autoComplete="new-password"
           placeholder="Min. 6 characters"
-          className={`rounded-lg border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring ${
-            errors.password ? "border-red-400" : "border-border"
-          }`}
+          className={`rounded-lg border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring ${errors.password ? "border-red-400" : "border-border"
+            }`}
           {...register("password", {
             required: "Password is required",
             minLength: {
@@ -148,6 +146,13 @@ export default function SignupForm() {
             },
           })}
         />
+        <button
+          type="button"
+          onClick={() => setShowPassword((prev) => !prev)}
+          className="absolute right-3 top-9.5 text-sm text-primary"
+        >
+          {showPassword ? "Hide" : "Show"}
+        </button>
         {errors.password && (
           <p className="text-xs text-red-500">{errors.password.message}</p>
         )}

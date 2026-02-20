@@ -1,36 +1,48 @@
 import { GraphQLClient, gql } from "graphql-request";
 
 const GRAPHQL_ENDPOINT =
-  process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:4000/graphql";
+  process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:8000/graphql/";
 
 export const graphqlClient = new GraphQLClient(GRAPHQL_ENDPOINT);
 
-export const LOGIN_MUTATION = gql`
-  mutation Login($email: String!, $password: String!) {
-    login(email: $email, password: $password) {
-      token
-      user {
-        id
-        email
-        firstName
-        lastName
-      }
+export function extractErrorMessage(error: unknown): string {
+  if (!error) return "An error occurred";
+
+  // Handle graphql-request errors
+  if (typeof error === "object" && "response" in error) {
+    const gqlError = error as any;
+    if (gqlError.response?.errors?.[0]?.message) {
+      return gqlError.response.errors[0].message;
     }
   }
-`;
 
-export const SIGNUP_MUTATION = gql`
-  mutation Signup(
-    $firstName: String!
-    $lastName: String!
-    $email: String!
-    $password: String!
+  // Handle standard Error objects
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  // Fallback
+  return String(error);
+}
+
+export const UNIFIED_AUTH_MUTATION = gql`
+  mutation UnifiedAuth(
+    $provider: String!
+    $email: String
+    $password: String
+    $firstName: String
+    $lastName: String
+    $idToken: String
+    $operationType: String
   ) {
     signup(
-      firstName: $firstName
-      lastName: $lastName
+      provider: $provider
       email: $email
       password: $password
+      firstName: $firstName
+      lastName: $lastName
+      idToken: $idToken
+      operationType: $operationType
     ) {
       token
       user {
@@ -43,16 +55,3 @@ export const SIGNUP_MUTATION = gql`
   }
 `;
 
-export const OAUTH_LOGIN_MUTATION = gql`
-  mutation OAuthLogin($token: String!, $provider: String!) {
-    oauthLogin(token: $token, provider: $provider) {
-      token
-      user {
-        id
-        email
-        firstName
-        lastName
-      }
-    }
-  }
-`;

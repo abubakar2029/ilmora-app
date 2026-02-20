@@ -1,6 +1,7 @@
 import AppShell from "@/components/app-shell";
-import AuthPage from "@/components/auth-page";
+import AuthForm from "@/components/auth-form";
 import { ToastProvider } from "@/components/toast";
+import AuthPage from "@/components/auth-page";
 
 export default function SignupPage() {
   return (
