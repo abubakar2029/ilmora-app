@@ -21,7 +21,8 @@ export function middleware(request: NextRequest) {
     pathname === "/journey" ||
     pathname.startsWith("/journey/") ||
     pathname === "/admin" ||
-    pathname.startsWith("/admin/");
+    pathname.startsWith("/admin/") ||
+    pathname === "/onboarding/role";
 
   if (!isProtected) {
     return NextResponse.next();
@@ -37,5 +38,13 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard", "/dashboard/:path*", "/journey", "/journey/:path*", "/admin", "/admin/:path*"],
+  matcher: [
+    "/dashboard",
+    "/dashboard/:path*",
+    "/journey",
+    "/journey/:path*",
+    "/admin",
+    "/admin/:path*",
+    "/onboarding/role",
+  ],
 };

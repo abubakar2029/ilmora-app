@@ -19,6 +19,11 @@ function setAccessToken(token: string | null): void {
   accessToken = token;
 }
 
+/** After OAuth role onboarding or token refresh with new claims. */
+export function setAccessTokenFromSession(token: string): void {
+  setAccessToken(token);
+}
+
 async function readErrorMessage(res: Response): Promise<string> {
   try {
     const data = (await res.json()) as Record<string, unknown>;

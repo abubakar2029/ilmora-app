@@ -36,11 +36,9 @@ function GitHubIcon({ className }: { className?: string }) {
 
 export type OAuthButtonsProps = {
   isLoading?: boolean;
-  /** Role assigned when creating a new account via OAuth (from register page). */
-  defaultRole?: "student" | "mentor";
 };
 
-function OAuthButtonsInner({ isLoading = false, defaultRole = "student" }: OAuthButtonsProps) {
+function OAuthButtonsInner({ isLoading = false }: OAuthButtonsProps) {
   const searchParams = useSearchParams();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
@@ -48,11 +46,12 @@ function OAuthButtonsInner({ isLoading = false, defaultRole = "student" }: OAuth
 
   function startOAuth(provider: "google" | "github") {
     setLoadingProvider(provider);
-    const params = new URLSearchParams({ role: defaultRole });
+    const params = new URLSearchParams();
     if (from && from.startsWith("/")) {
       params.set("from", from);
     }
-    window.location.href = `/api/auth/oauth/${provider}?${params.toString()}`;
+    const q = params.toString();
+    window.location.href = `/api/auth/oauth/${provider}${q ? `?${q}` : ""}`;
   }
 
   const disabled = isLoading || !!loadingProvider;

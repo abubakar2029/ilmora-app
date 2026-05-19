@@ -1,16 +1,19 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import AccountTypeBadge from "@/components/profile/account-type-badge";
+import AdminProfileNotice from "@/components/profile/admin-profile-notice";
+import { ProfileAiNotice, ProfileFieldInput } from "@/components/profile/profile-field";
 import { ApiError, apiFetch } from "@/lib/api";
+import {
+  MENTOR_PROFILE_FIELDS,
+  STUDENT_PROFILE_FIELDS,
+  type ProfileFieldDef,
+} from "@/lib/profile-fields";
 import { useAuth } from "@/context/AuthContext";
-
-const inputClass =
-  "w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring";
-
-const labelClass = "text-sm font-medium text-foreground";
 
 const PROFILES_ME = "/api/profiles/me/";
 
@@ -42,7 +45,7 @@ function ProcessingBanner({ onDismiss }: { onDismiss: () => void }) {
       className="mb-6 flex flex-col gap-2 rounded-lg border border-primary/30 bg-secondary px-4 py-3 text-sm text-secondary-foreground sm:flex-row sm:items-center sm:justify-between"
     >
       <p className="text-pretty">
-        Your profile is being processed. Your journey and matches will be ready shortly.
+        Profile saved. We are building your AI profile for matches and your journey — check back shortly.
       </p>
       <button
         type="button"
@@ -56,52 +59,43 @@ function ProcessingBanner({ onDismiss }: { onDismiss: () => void }) {
 }
 
 export default function DashboardProfilePage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const { user, isLoading: authLoading, syncUser } = useAuth();
   const role = typeof user?.role === "string" ? user.role : undefined;
 
   const [loadState, setLoadState] = useState<"loading" | "ready">("loading");
   const [profile, setProfile] = useState<StudentProfileDto | MentorProfileDto | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-
   const [showBanner, setShowBanner] = useState(false);
 
-  const [student, setStudent] = useState({
-    headline: "",
-    skills: "",
-    goals: "",
-    background: "",
-  });
-  const [mentor, setMentor] = useState({
-    headline: "",
-    expertise: "",
-    availability: "",
-  });
-
+  const [student, setStudent] = useState({ headline: "", skills: "", goals: "", background: "" });
+  const [mentor, setMentor] = useState({ headline: "", expertise: "", availability: "" });
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const hydrateForm = useCallback((p: StudentProfileDto | MentorProfileDto) => {
     if (isStudentProfile(p)) {
-      setStudent({
-        headline: p.headline,
-        skills: p.skills,
-        goals: p.goals,
-        background: p.background,
-      });
+      setStudent({ headline: p.headline, skills: p.skills, goals: p.goals, background: p.background });
     } else {
-      setMentor({
-        headline: p.headline,
-        expertise: p.expertise,
-        availability: p.availability,
-      });
+      setMentor({ headline: p.headline, expertise: p.expertise, availability: p.availability });
     }
   }, []);
+
+  const checkRoleOnboarding = useCallback(async () => {
+    const res = await apiFetch("/api/auth/me/", { method: "GET" });
+    if (!res.ok) return;
+    const data = (await res.json()) as { needs_role_selection?: boolean };
+    if (data.needs_role_selection) {
+      router.replace("/onboarding/role?next=/dashboard/profile");
+    }
+  }, [router]);
 
   const fetchProfile = useCallback(async () => {
     setLoadError(null);
     setLoadState("loading");
     try {
+      await checkRoleOnboarding();
       const res = await apiFetch(PROFILES_ME, { method: "GET" });
       if (res.status === 404) {
         setProfile(null);
@@ -122,7 +116,7 @@ export default function DashboardProfilePage() {
       setLoadError(e instanceof Error ? e.message : "Could not load profile");
       setLoadState("ready");
     }
-  }, [hydrateForm]);
+  }, [hydrateForm, checkRoleOnboarding]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -141,23 +135,37 @@ export default function DashboardProfilePage() {
     return "Something went wrong";
   }
 
+  function studentValue(id: string): string {
+    return student[id as keyof typeof student] ?? "";
+  }
+
+  function setStudentField(id: string, value: string) {
+    setStudent((s) => ({ ...s, [id]: value }));
+  }
+
+  function mentorValue(id: string): string {
+    return mentor[id as keyof typeof mentor] ?? "";
+  }
+
+  function setMentorField(id: string, value: string) {
+    setMentor((m) => ({ ...m, [id]: value }));
+  }
+
   async function submitStudent(create: boolean) {
     setSubmitError(null);
     setSubmitting(true);
     try {
-      const method = create ? "POST" : "PATCH";
       const res = await apiFetch(PROFILES_ME, {
-        method,
+        method: create ? "POST" : "PATCH",
         body: JSON.stringify(student),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new ApiError(res.status, data);
-      }
+      if (!res.ok) throw new ApiError(res.status, data);
       setProfile(data as StudentProfileDto);
       hydrateForm(data as StudentProfileDto);
       setEditing(false);
       setShowBanner(true);
+      syncUser();
     } catch (e) {
       setSubmitError(await parseApiError(e));
     } finally {
@@ -169,19 +177,17 @@ export default function DashboardProfilePage() {
     setSubmitError(null);
     setSubmitting(true);
     try {
-      const method = create ? "POST" : "PATCH";
       const res = await apiFetch(PROFILES_ME, {
-        method,
+        method: create ? "POST" : "PATCH",
         body: JSON.stringify(mentor),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new ApiError(res.status, data);
-      }
+      if (!res.ok) throw new ApiError(res.status, data);
       setProfile(data as MentorProfileDto);
       hydrateForm(data as MentorProfileDto);
       setEditing(false);
       setShowBanner(true);
+      syncUser();
     } catch (e) {
       setSubmitError(await parseApiError(e));
     } finally {
@@ -189,334 +195,157 @@ export default function DashboardProfilePage() {
     }
   }
 
+  function renderFields(
+    fields: ProfileFieldDef[],
+    getValue: (id: string) => string,
+    setValue: (id: string, v: string) => void,
+    readOnly: boolean,
+    idPrefix: string,
+  ) {
+    return fields.map((field) => (
+      <ProfileFieldInput
+        key={field.id}
+        field={field}
+        value={getValue(field.id)}
+        onChange={(v) => setValue(field.id, v)}
+        readOnly={readOnly}
+        disabled={submitting}
+        idPrefix={idPrefix}
+      />
+    ));
+  }
+
   if (authLoading || loadState === "loading") {
-    return (
-      <>
-        <div className="mx-auto max-w-2xl py-8 text-sm text-muted-foreground">Loading profile…</div>
-      </>
-    );
+    return <div className="mx-auto max-w-2xl py-8 text-sm text-muted-foreground">Loading profile…</div>;
   }
 
   if (loadError) {
     return (
-      <>
-        <div className="mx-auto max-w-2xl py-8">
-          <p className="text-sm text-red-500">{loadError}</p>
-          <button
-            type="button"
-            onClick={() => void fetchProfile()}
-            className="mt-4 text-sm font-medium text-primary hover:underline"
-          >
-            Try again
-          </button>
-        </div>
-      </>
+      <div className="mx-auto max-w-2xl py-8">
+        <p className="text-sm text-red-500">{loadError}</p>
+        <button type="button" onClick={() => void fetchProfile()} className="mt-4 text-sm font-medium text-primary hover:underline">
+          Try again
+        </button>
+      </div>
     );
   }
 
   const isAdmin = role === "admin";
   const isStudentRole = role === "student";
   const isMentorRole = role === "mentor";
-
   return (
-    <>
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">Profile</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Set up how others see you. You can update this anytime.
-            </p>
-          </div>
-          <Link href="/dashboard" className="text-sm font-medium text-primary hover:underline">
-            ← Dashboard
-          </Link>
-        </div>
-
-        {showBanner ? <ProcessingBanner onDismiss={() => setShowBanner(false)} /> : null}
-
-        {isAdmin ? (
-          <p className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-            Admin accounts do not have a mentor or student profile.
+    <div className="mx-auto max-w-2xl">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">Profile</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tell us about yourself so we can personalize matches and your journey.
           </p>
-        ) : profile === null ? (
-          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-foreground">Create your profile</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {isStudentRole && "Tell us about your skills and goals."}
-              {isMentorRole && "Share how you can help students."}
-              {!isStudentRole && !isMentorRole && "Sign in as a student or mentor to create a profile."}
-            </p>
+        </div>
+        <Link href="/dashboard" className="text-sm font-medium text-primary hover:underline">
+          ← Dashboard
+        </Link>
+      </div>
 
-            {isStudentRole ? (
-              <form
-                className="mt-6 flex flex-col gap-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void submitStudent(true);
-                }}
-              >
-                <Field label="Headline" htmlFor="s-headline">
-                  <input
-                    id="s-headline"
-                    required
-                    value={student.headline}
-                    onChange={(e) => setStudent((s) => ({ ...s, headline: e.target.value }))}
-                    className={inputClass}
-                    placeholder="e.g. Computer Science student at XYZ University"
-                    disabled={submitting}
-                  />
-                </Field>
-                <Field label="Skills" htmlFor="s-skills">
-                  <textarea
-                    id="s-skills"
-                    required
-                    rows={3}
-                    value={student.skills}
-                    onChange={(e) => setStudent((s) => ({ ...s, skills: e.target.value }))}
-                    className={inputClass}
-                    placeholder="e.g. Python, Machine Learning, Data Analysis"
-                    disabled={submitting}
-                  />
-                </Field>
-                <Field label="Goals" htmlFor="s-goals">
-                  <textarea
-                    id="s-goals"
-                    required
-                    rows={3}
-                    value={student.goals}
-                    onChange={(e) => setStudent((s) => ({ ...s, goals: e.target.value }))}
-                    className={inputClass}
-                    placeholder="e.g. Land a data science internship, build an ML project"
-                    disabled={submitting}
-                  />
-                </Field>
-                <Field label="Background" htmlFor="s-bg">
-                  <textarea
-                    id="s-bg"
-                    required
-                    rows={4}
-                    value={student.background}
-                    onChange={(e) => setStudent((s) => ({ ...s, background: e.target.value }))}
-                    className={inputClass}
-                    placeholder="e.g. Final year student, studied at..."
-                    disabled={submitting}
-                  />
-                </Field>
-                {submitError ? <p className="text-sm text-red-500">{submitError}</p> : null}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-                >
-                  {submitting ? "Saving…" : "Save profile"}
-                </button>
-              </form>
-            ) : null}
+      {showBanner ? <ProcessingBanner onDismiss={() => setShowBanner(false)} /> : null}
 
-            {isMentorRole ? (
-              <form
-                className="mt-6 flex flex-col gap-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void submitMentor(true);
-                }}
-              >
-                <Field label="Headline" htmlFor="m-headline">
-                  <input
-                    id="m-headline"
-                    required
-                    value={mentor.headline}
-                    onChange={(e) => setMentor((m) => ({ ...m, headline: e.target.value }))}
-                    className={inputClass}
-                    placeholder="e.g. Senior ML engineer, former lecturer"
-                    disabled={submitting}
-                  />
-                </Field>
-                <Field label="Expertise" htmlFor="m-exp">
-                  <textarea
-                    id="m-exp"
-                    required
-                    rows={4}
-                    value={mentor.expertise}
-                    onChange={(e) => setMentor((m) => ({ ...m, expertise: e.target.value }))}
-                    className={inputClass}
-                    placeholder="Areas you mentor in, experience, topics you enjoy teaching"
-                    disabled={submitting}
-                  />
-                </Field>
-                <Field label="Availability" htmlFor="m-av">
-                  <textarea
-                    id="m-av"
-                    required
-                    rows={3}
-                    value={mentor.availability}
-                    onChange={(e) => setMentor((m) => ({ ...m, availability: e.target.value }))}
-                    className={inputClass}
-                    placeholder="e.g. Weekends, 2 hours/week, prefer async"
-                    disabled={submitting}
-                  />
-                </Field>
-                {submitError ? <p className="text-sm text-red-500">{submitError}</p> : null}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-                >
-                  {submitting ? "Saving…" : "Save profile"}
-                </button>
-              </form>
-            ) : null}
+      <AccountTypeBadge role={role} />
+
+      {isAdmin ? (
+        <AdminProfileNotice />
+      ) : profile === null ? (
+        <div className="mt-6 rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground">Complete your profile</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Required before matches and journey features unlock.</p>
+          <div className="mt-4">
+            <ProfileAiNotice />
           </div>
-        ) : (
-          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-foreground">Your profile</h2>
-              {!editing ? (
+          {isStudentRole || isMentorRole ? (
+            <form
+              className="mt-6 flex flex-col gap-5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void (isStudentRole ? submitStudent(true) : submitMentor(true));
+              }}
+            >
+              {isStudentRole
+                ? renderFields(STUDENT_PROFILE_FIELDS, studentValue, setStudentField, false, "c-")
+                : renderFields(MENTOR_PROFILE_FIELDS, mentorValue, setMentorField, false, "c-")}
+              {submitError ? <p className="text-sm text-red-500">{submitError}</p> : null}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+              >
+                {submitting ? "Saving…" : "Save profile"}
+              </button>
+            </form>
+          ) : (
+            <p className="mt-6 text-sm text-muted-foreground">
+              <Link href="/onboarding/role" className="font-medium text-primary hover:underline">
+                Choose your account type
+              </Link>{" "}
+              to continue.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-6 rounded-xl border border-border bg-card p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-foreground">Your profile</h2>
+            {!editing ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (profile) hydrateForm(profile);
+                  setEditing(true);
+                  setSubmitError(null);
+                }}
+                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+              >
+                Edit
+              </button>
+            ) : (
+              <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     if (profile) hydrateForm(profile);
-                    setEditing(true);
+                    setEditing(false);
                     setSubmitError(null);
                   }}
-                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
                 >
-                  Edit
+                  Cancel
                 </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (profile) hydrateForm(profile);
-                      setEditing(false);
-                      setSubmitError(null);
-                    }}
-                    className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    disabled={submitting}
-                    onClick={() =>
-                      isStudentProfile(profile) ? void submitStudent(false) : void submitMentor(false)
-                    }
-                    className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-                  >
-                    {submitting ? "Saving…" : "Save changes"}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {isStudentProfile(profile) ? (
-              <div className="mt-6 flex flex-col gap-4">
-                <Field label="Headline" htmlFor="es-headline">
-                  <input
-                    id="es-headline"
-                    readOnly={!editing}
-                    value={student.headline}
-                    onChange={(e) => setStudent((s) => ({ ...s, headline: e.target.value }))}
-                    className={`${inputClass} ${!editing ? "cursor-default bg-muted/40" : ""}`}
-                    placeholder="e.g. Computer Science student at XYZ University"
-                  />
-                </Field>
-                <Field label="Skills" htmlFor="es-skills">
-                  <textarea
-                    id="es-skills"
-                    readOnly={!editing}
-                    rows={3}
-                    value={student.skills}
-                    onChange={(e) => setStudent((s) => ({ ...s, skills: e.target.value }))}
-                    className={`${inputClass} ${!editing ? "cursor-default resize-none bg-muted/40" : ""}`}
-                    placeholder="e.g. Python, Machine Learning, Data Analysis"
-                  />
-                </Field>
-                <Field label="Goals" htmlFor="es-goals">
-                  <textarea
-                    id="es-goals"
-                    readOnly={!editing}
-                    rows={3}
-                    value={student.goals}
-                    onChange={(e) => setStudent((s) => ({ ...s, goals: e.target.value }))}
-                    className={`${inputClass} ${!editing ? "cursor-default resize-none bg-muted/40" : ""}`}
-                    placeholder="e.g. Land a data science internship, build an ML project"
-                  />
-                </Field>
-                <Field label="Background" htmlFor="es-bg">
-                  <textarea
-                    id="es-bg"
-                    readOnly={!editing}
-                    rows={4}
-                    value={student.background}
-                    onChange={(e) => setStudent((s) => ({ ...s, background: e.target.value }))}
-                    className={`${inputClass} ${!editing ? "cursor-default resize-none bg-muted/40" : ""}`}
-                    placeholder="e.g. Final year student, studied at..."
-                  />
-                </Field>
-              </div>
-            ) : (
-              <div className="mt-6 flex flex-col gap-4">
-                <Field label="Headline" htmlFor="em-headline">
-                  <input
-                    id="em-headline"
-                    readOnly={!editing}
-                    value={mentor.headline}
-                    onChange={(e) => setMentor((m) => ({ ...m, headline: e.target.value }))}
-                    className={`${inputClass} ${!editing ? "cursor-default bg-muted/40" : ""}`}
-                    placeholder="e.g. Senior ML engineer, former lecturer"
-                  />
-                </Field>
-                <Field label="Expertise" htmlFor="em-exp">
-                  <textarea
-                    id="em-exp"
-                    readOnly={!editing}
-                    rows={4}
-                    value={mentor.expertise}
-                    onChange={(e) => setMentor((m) => ({ ...m, expertise: e.target.value }))}
-                    className={`${inputClass} ${!editing ? "cursor-default resize-none bg-muted/40" : ""}`}
-                    placeholder="Areas you mentor in, experience, topics you enjoy teaching"
-                  />
-                </Field>
-                <Field label="Availability" htmlFor="em-av">
-                  <textarea
-                    id="em-av"
-                    readOnly={!editing}
-                    rows={3}
-                    value={mentor.availability}
-                    onChange={(e) => setMentor((m) => ({ ...m, availability: e.target.value }))}
-                    className={`${inputClass} ${!editing ? "cursor-default resize-none bg-muted/40" : ""}`}
-                    placeholder="e.g. Weekends, 2 hours/week, prefer async"
-                  />
-                </Field>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => void (isStudentProfile(profile) ? submitStudent(false) : submitMentor(false))}
+                  className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                >
+                  {submitting ? "Saving…" : "Save changes"}
+                </button>
               </div>
             )}
-
-            {submitError ? <p className="mt-4 text-sm text-red-500">{submitError}</p> : null}
           </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={htmlFor} className={labelClass}>
-        {label}
-      </label>
-      {children}
+          <div className="mt-4">
+            <ProfileAiNotice />
+          </div>
+          <div className="mt-6 flex flex-col gap-5">
+            {isStudentProfile(profile)
+              ? renderFields(
+                  STUDENT_PROFILE_FIELDS,
+                  studentValue,
+                  setStudentField,
+                  !editing,
+                  "e-",
+                )
+              : renderFields(MENTOR_PROFILE_FIELDS, mentorValue, setMentorField, !editing, "e-")}
+          </div>
+          {submitError ? <p className="mt-4 text-sm text-red-500">{submitError}</p> : null}
+        </div>
+      )}
     </div>
   );
 }

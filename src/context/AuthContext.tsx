@@ -19,6 +19,7 @@ export type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
+  syncUser: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -68,8 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      syncUser,
     }),
-    [user, isLoading, login, register, logout],
+    [user, isLoading, login, register, logout, syncUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

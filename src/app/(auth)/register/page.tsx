@@ -50,7 +50,7 @@ export default function RegisterPage() {
         <p className="mt-1.5 text-sm text-muted-foreground">Join as a student or mentor.</p>
       </div>
 
-      <OAuthButtons isLoading={busy} defaultRole={role} />
+      <OAuthButtons isLoading={busy} />
 
       <AuthDivider />
 

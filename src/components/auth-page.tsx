@@ -35,7 +35,7 @@ export default function AuthPage({ mode }: AuthPageProps) {
             {/* Card */}
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
                 {/* OAuth buttons */}
-                <OAuthButtons isLoading={isLoading} defaultRole="student" />
+                <OAuthButtons isLoading={isLoading} />
 
                 {/* Divider */}
                 <div className="my-5 flex items-center gap-3">

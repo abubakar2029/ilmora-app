@@ -3,39 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 
 import AppShell from "@/components/app-shell";
+import JourneyDemoBanner from "@/components/journey-demo-banner";
 import JourneyRoadmap, { type JourneyStep } from "@/components/journey-roadmap";
 import { ToastProvider, useToast } from "@/components/toast";
 import { ApiError, apiFetch } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { journeyToastForResult, parseJourneyResponse, type JourneyDemoReason } from "@/lib/journey";
 
 const JOURNEY_API = "/api/journey/";
 const JOURNEY_REGENERATE = "/api/journey/regenerate/";
-
-const STATUSES = new Set<JourneyStep["status"]>(["completed", "active", "upcoming"]);
-
-function normalizeJourneyPayload(data: unknown): JourneyStep[] {
-  const raw = Array.isArray(data) ? data : [];
-  const out: JourneyStep[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== "object") continue;
-    const o = item as Record<string, unknown>;
-    const id = typeof o.id === "number" ? o.id : Number(o.id);
-    const title = typeof o.title === "string" ? o.title : "";
-    const description = typeof o.description === "string" ? o.description : "";
-    const status = o.status;
-    const color = typeof o.color === "string" ? o.color : "pink";
-    if (!Number.isFinite(id) || !title) continue;
-    if (typeof status !== "string" || !STATUSES.has(status as JourneyStep["status"])) continue;
-    out.push({
-      id,
-      title,
-      description,
-      status: status as JourneyStep["status"],
-      color,
-    });
-  }
-  return out;
-}
 
 function JourneySkeleton() {
   return (
@@ -58,7 +34,7 @@ function JourneySkeleton() {
           <div key={i} className="mx-auto h-36 w-full max-w-xs rounded-xl bg-muted/60" />
         ))}
       </div>
-    </div>
+      </div>
   );
 }
 
@@ -67,6 +43,10 @@ function JourneyContent() {
   const { showToast } = useToast();
 
   const [steps, setSteps] = useState<JourneyStep[]>([]);
+  const [isDemo, setIsDemo] = useState(false);
+  const [demoReason, setDemoReason] = useState<JourneyDemoReason>("none");
+  const [demoMessage, setDemoMessage] = useState<string | null>(null);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
@@ -80,9 +60,15 @@ function JourneyContent() {
       if (!res.ok) {
         throw new ApiError(res.status, data);
       }
-      setSteps(normalizeJourneyPayload(data));
+      const parsed = parseJourneyResponse(data);
+      setSteps(parsed.steps);
+      setIsDemo(parsed.is_demo);
+      setDemoReason(parsed.demo_reason);
+      setDemoMessage(parsed.message ?? null);
+      setMissingFields(parsed.missing_fields);
     } catch (e) {
-      const msg = e instanceof ApiError ? String((e.body as { detail?: string })?.detail ?? e.message) : "Could not load journey";
+      const msg =
+        e instanceof ApiError ? String((e.body as { detail?: string })?.detail ?? e.message) : "Could not load journey";
       setError(typeof msg === "string" ? msg : "Could not load journey");
       setSteps([]);
     } finally {
@@ -95,18 +81,23 @@ function JourneyContent() {
     void loadJourney();
   }, [authLoading, loadJourney]);
 
-  const empty = !loading && steps.length === 0;
-
   async function onRegenerate() {
     setRegenerating(true);
+    setError(null);
     try {
       const res = await apiFetch(JOURNEY_REGENERATE, { method: "POST" });
-      const body = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new ApiError(res.status, body);
+        throw new ApiError(res.status, data);
       }
-      showToast("Regenerating your journey... refresh in a few seconds", "success");
-      setSteps([]);
+      const parsed = parseJourneyResponse(data);
+      setSteps(parsed.steps);
+      setIsDemo(parsed.is_demo);
+      setDemoReason(parsed.demo_reason);
+      setDemoMessage(parsed.message ?? null);
+      setMissingFields(parsed.missing_fields);
+      const toast = journeyToastForResult(parsed);
+      showToast(toast.text, toast.variant);
     } catch (e) {
       const msg =
         e instanceof ApiError ? String((e.body as { detail?: string })?.detail ?? e.message) : "Regeneration failed";
@@ -118,47 +109,51 @@ function JourneyContent() {
 
   return (
     <div className="relative w-full">
-        {!loading && steps.length > 0 ? (
+      {isDemo ? (
+        <JourneyDemoBanner reason={demoReason} message={demoMessage} missingFields={missingFields} />
+      ) : null}
+
+      {!loading && steps.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => void onRegenerate()}
+          disabled={regenerating}
+          className="absolute right-0 top-0 z-20 text-xs font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:opacity-50"
+        >
+          {regenerating ? "Regenerating…" : "Regenerate Journey"}
+        </button>
+      ) : null}
+
+      {loading ? (
+        <JourneySkeleton />
+      ) : error ? (
+        <div className="rounded-xl border border-border bg-card px-6 py-10 text-center">
+          <p className="text-sm text-red-500">{error}</p>
           <button
             type="button"
-            onClick={() => void onRegenerate()}
-            disabled={regenerating}
-            className="absolute right-0 top-0 z-20 text-xs font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:opacity-50"
+            onClick={() => void loadJourney()}
+            className="mt-4 text-sm font-medium text-primary hover:underline"
           >
-            {regenerating ? "Regenerating…" : "Regenerate Journey"}
+            Try again
           </button>
-        ) : null}
-
-        {loading ? (
-          <JourneySkeleton />
-        ) : error ? (
-          <div className="rounded-xl border border-border bg-card px-6 py-10 text-center">
-            <p className="text-sm text-red-500">{error}</p>
-            <button
-              type="button"
-              onClick={() => void loadJourney()}
-              className="mt-4 text-sm font-medium text-primary hover:underline"
-            >
-              Try again
-            </button>
-          </div>
-        ) : empty ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
-            <p className="max-w-md text-sm leading-relaxed text-muted-foreground text-pretty">
-              Your personalized journey is being prepared. Check back in a moment.
-            </p>
-            <button
-              type="button"
-              onClick={() => void loadJourney()}
-              className="mt-6 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              Refresh
-            </button>
-          </div>
-        ) : (
-          <JourneyRoadmap steps={steps} />
-        )}
-      </div>
+        </div>
+      ) : steps.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
+          <p className="max-w-md text-sm leading-relaxed text-muted-foreground text-pretty">
+            No journey steps yet. Save your profile or tap regenerate.
+          </p>
+          <button
+            type="button"
+            onClick={() => void loadJourney()}
+            className="mt-6 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            Refresh
+          </button>
+        </div>
+      ) : (
+        <JourneyRoadmap steps={steps} />
+      )}
+    </div>
   );
 }
 
@@ -166,17 +161,16 @@ export default function MyJourneyPage() {
   return (
     <AppShell>
       <ToastProvider>
-        <div className="mx-auto">
+        <div className="mx-auto w-full">
           <header className="mb-10">
             <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl text-balance">My Journey</h1>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground lg:text-base text-pretty">
-              Track your progress, see where you are, and discover what comes next. Every step brings more clarity.
+              Track your progress, see where you are, and discover what comes next.
             </p>
           </header>
 
           <JourneyContent />
 
-          {/* Legend */}
           <div className="mt-10 flex flex-wrap items-center gap-5 rounded-lg border border-border bg-card px-5 py-4">
             <div className="flex items-center gap-2">
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary">

@@ -63,14 +63,19 @@ export async function GET(request: Request) {
     return oauthErrorRedirect(request, "Could not complete GitHub sign-in.");
   }
 
-  const result = await exchangeWithBackend("github", accessToken, role);
+  const result = await exchangeWithBackend("github", accessToken);
   if ("error" in result) {
     return oauthErrorRedirect(request, result.error);
   }
 
-  const next = await consumeOAuthFrom();
+  const next = result.needsRoleSelection
+    ? "/onboarding/role"
+    : await consumeOAuthFrom();
   const successUrl = new URL("/auth/oauth-complete", getAppOrigin(request));
   successUrl.searchParams.set("next", next);
+  if (result.needsRoleSelection) {
+    successUrl.searchParams.set("setup_role", "1");
+  }
   const response = NextResponse.redirect(successUrl);
   applyRefreshCookie(response, result.refresh);
   return response;

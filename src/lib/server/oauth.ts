@@ -74,13 +74,15 @@ export async function consumeOAuthState(
 export async function exchangeWithBackend(
   provider: "google" | "github",
   token: string,
-  role: string,
-): Promise<{ access: string; refresh: string } | { error: string; status: number }> {
+): Promise<
+  | { access: string; refresh: string; needsRoleSelection: boolean }
+  | { error: string; status: number }
+> {
   const backend = getBackendBaseUrl();
   const res = await fetch(`${backend}/api/auth/oauth/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider, token, role }),
+    body: JSON.stringify({ provider, token }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -96,7 +98,8 @@ export async function exchangeWithBackend(
   if (!access || !refresh) {
     return { error: "Invalid token response from server", status: 502 };
   }
-  return { access, refresh };
+  const needsRoleSelection = Boolean((data as { needs_role_selection?: unknown }).needs_role_selection);
+  return { access, refresh, needsRoleSelection };
 }
 
 export function oauthErrorRedirect(request: Request, message: string): NextResponse {
