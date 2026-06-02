@@ -185,7 +185,7 @@ export default function SessionsPage() {
           Could not load sessions.
         </p>
       ) : isLoading ? (
-        <ListSkeleton rows={4} />
+        <ListSkeleton count={4} />
       ) : sessions.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
           <p className="text-sm text-muted-foreground">
