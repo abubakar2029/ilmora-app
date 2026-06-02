@@ -56,7 +56,7 @@ export default function StudentDashboard({
               href={link.href}
               className={`rounded-full px-4 py-2 text-sm font-medium transition-colors
                 ${
-                  link.primary
+                  "primary" in link && link.primary
                     ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
                     : "border border-border bg-background text-foreground hover:bg-muted"
                 }
