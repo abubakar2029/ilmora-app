@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import AppShell from "@/components/app-shell";
 import MentorBadgeGrid from "@/components/mentor/mentor-badge-grid";
+import type { MentorBadge } from "@/lib/mentor-api";
 import { listMentors } from "@/lib/mentor-api";
 
 const cardClass =
@@ -12,7 +13,7 @@ const cardClass =
 
 export default function MentorsDirectoryPage() {
   const [mentors, setMentors] = useState<
-    { id: number; user: number; headline: string; expertise: string; badges?: { id: string; label: string }[] }[]
+    { id: number; user: number; headline: string; expertise: string; badges?: MentorBadge[] }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
