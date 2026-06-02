@@ -2,6 +2,7 @@ import { decodeJwtPayload } from "@/lib/jwt-decode";
 
 export type JwtUserPayload = Record<string, unknown> & {
   user_id?: number;
+  email?: string;
   role?: string;
   token_type?: string;
   exp?: number;
@@ -57,9 +58,11 @@ export async function login(email: string, password: string): Promise<void> {
     body: JSON.stringify({ email, password }),
     credentials: "include",
   });
-  const data = (await res.json().catch(() => ({}))) as { access?: string };
+  const data = (await res.json().catch(() => ({}))) as { access?: string; detail?: string };
   if (!res.ok) {
-    throw new Error(await readErrorMessage(res));
+    throw new Error(
+      typeof data.detail === "string" ? data.detail : res.statusText || "Login failed",
+    );
   }
   if (!data.access) {
     throw new Error("Invalid login response");
@@ -86,8 +89,11 @@ export async function register(
       role,
     }),
   });
+  const data = (await res.json().catch(() => ({}))) as { detail?: string };
   if (!res.ok) {
-    throw new Error(await readErrorMessage(res));
+    throw new Error(
+      typeof data.detail === "string" ? data.detail : res.statusText || "Registration failed",
+    );
   }
 }
 

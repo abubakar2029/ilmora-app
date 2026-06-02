@@ -1,85 +1,41 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { ApiError, apiFetch } from "@/lib/api";
+import NotificationItem from "@/components/NotificationItem";
+import { InlineLoader, PageSkeleton } from "@/components/ui/loading";
+import { useNotificationMutations, useNotificationsInfinite } from "@/hooks/queries";
 import type { AppNotification } from "@/lib/notifications";
-import { parseNotificationsResponse } from "@/lib/notifications";
-import { formatTimeAgo } from "@/lib/time-ago";
-
-const API_FIRST = "/api/notifications/?page=1";
 
 export default function NotificationsHistoryPage() {
-  const [items, setItems] = useState<AppNotification[]>([]);
-  const [nextUrl, setNextUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading: loading, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useNotificationsInfinite();
+  const { markRead, markAllRead } = useNotificationMutations();
   const [markingId, setMarkingId] = useState<number | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const loadUrl = useCallback(async (url: string, append: boolean) => {
-    const res = await apiFetch(url, { method: "GET" });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new ApiError(res.status, data);
-    const parsed = parseNotificationsResponse(data);
-    setNextUrl(parsed.next);
-    setItems((prev) => (append ? [...prev, ...parsed.results] : parsed.results));
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setError(null);
-      setLoading(true);
-      try {
-        await loadUrl(API_FIRST, false);
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load notifications");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [loadUrl]);
-
-  const loadMore = useCallback(async () => {
-    if (!nextUrl || loadingMore) return;
-    setLoadingMore(true);
-    setError(null);
-    try {
-      await loadUrl(nextUrl, true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load more");
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [nextUrl, loadingMore, loadUrl]);
+  const items = data?.pages.flatMap((p) => p.results) ?? [];
+  const nextUrl = hasNextPage ? "more" : null;
+  const errorMessage = error instanceof Error ? error.message : null;
 
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el || !nextUrl) return;
+    if (!el || !nextUrl || isFetchingNextPage) return;
     const obs = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) void loadMore();
+        if (entries[0]?.isIntersecting) void fetchNextPage();
       },
       { rootMargin: "120px" },
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [nextUrl, loadMore]);
+  }, [nextUrl, isFetchingNextPage, fetchNextPage]);
 
-  async function markRead(n: AppNotification) {
+  async function handleMarkRead(n: AppNotification) {
     if (n.is_read || markingId === n.id) return;
     setMarkingId(n.id);
     try {
-      const res = await apiFetch(`/api/notifications/${n.id}/read/`, { method: "PATCH" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new ApiError(res.status, data);
-      const updated = data as AppNotification;
-      setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, ...updated, is_read: true } : x)));
+      await markRead.mutateAsync(n.id);
     } catch {
       /* ignore */
     } finally {
@@ -90,68 +46,61 @@ export default function NotificationsHistoryPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-2xl">
-        <div className="mb-8 h-9 w-64 animate-pulse rounded-lg bg-muted" />
-        <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-xl bg-muted/70" />
-          ))}
-        </div>
+        <PageSkeleton className="max-w-2xl" label="Loading notifications…" />
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-2xl">
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">Notifications</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Full history of your in-app notifications.</p>
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">Notifications</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Story approvals, match digests (monthly &amp; Saturdays), and connection updates appear here.
+          </p>
+        </div>
+        {items.some((n) => !n.is_read) ? (
+          <button
+            type="button"
+            disabled={markAllRead.isPending}
+            onClick={() => void markAllRead.mutate()}
+            className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-60"
+          >
+            Mark all read
+          </button>
+        ) : null}
       </header>
 
-      {error ? (
+      {errorMessage ? (
         <p className="mb-4 text-sm text-red-500" role="alert">
-          {error}
+          {errorMessage}
         </p>
       ) : null}
 
       {items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-10 text-center text-sm text-muted-foreground">
-          You don&apos;t have any notifications yet.
+        <p className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
+          No notifications yet.
         </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
           {items.map((n) => (
             <li key={n.id}>
-              <button
-                type="button"
+              <NotificationItem
+                notification={n}
                 disabled={markingId === n.id}
-                onClick={() => void markRead(n)}
-                className="flex w-full gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left shadow-sm transition-colors hover:bg-muted/40 disabled:opacity-60"
-              >
-                <span className="mt-1 flex w-5 shrink-0 justify-center" aria-hidden>
-                  {!n.is_read ? <span className="block h-2 w-2 rounded-full bg-primary" /> : null}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className={`text-sm text-pretty ${n.is_read ? "text-muted-foreground" : "text-foreground"}`}>
-                    {n.message}
-                  </span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {formatTimeAgo(n.created_at)}
-                    {n.notif_type ? ` · ${n.notif_type.replace(/_/g, " ")}` : ""}
-                  </span>
-                </span>
-              </button>
+                onMarkRead={() => void handleMarkRead(n)}
+              />
             </li>
           ))}
         </ul>
       )}
 
-      <div ref={sentinelRef} className="h-4 w-full" aria-hidden />
-
-      {loadingMore ? (
-        <p className="py-4 text-center text-xs text-muted-foreground">Loading more…</p>
-      ) : null}
-      {!nextUrl && items.length > 0 ? (
-        <p className="py-4 text-center text-xs text-muted-foreground">You&apos;re all caught up.</p>
+      <div ref={sentinelRef} className="h-4" aria-hidden />
+      {isFetchingNextPage ? (
+        <p className="mt-4 flex justify-center">
+          <InlineLoader label="Loading more…" className="text-xs" />
+        </p>
       ) : null}
     </div>
   );

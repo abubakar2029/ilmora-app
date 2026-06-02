@@ -12,6 +12,7 @@ import {
 
 import * as auth from "@/lib/auth";
 import type { JwtUserPayload } from "@/lib/auth";
+import { getQueryClient } from "@/providers/query-provider";
 
 export type AuthContextValue = {
   user: JwtUserPayload | null;
@@ -24,12 +25,36 @@ export type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Restored on reload so the sidebar can show role-specific links before refresh finishes. */
+export const NAV_ROLE_STORAGE_KEY = "ilmora_nav_role";
+
+const NAV_ROLE_EVENT = "ilmora-nav-role";
+
+export function persistNavRole(role: string | null | undefined): void {
+  if (typeof window === "undefined") return;
+  if (role === "student" || role === "mentor" || role === "admin") {
+    sessionStorage.setItem(NAV_ROLE_STORAGE_KEY, role);
+  } else {
+    sessionStorage.removeItem(NAV_ROLE_STORAGE_KEY);
+  }
+  window.dispatchEvent(new Event(NAV_ROLE_EVENT));
+}
+
+export function getCachedNavRole(): string | null {
+  if (typeof window === "undefined") return null;
+  const role = sessionStorage.getItem(NAV_ROLE_STORAGE_KEY);
+  if (role === "student" || role === "mentor" || role === "admin") return role;
+  return null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<JwtUserPayload | null>(() => auth.getCurrentUser());
   const [isLoading, setIsLoading] = useState(true);
 
   const syncUser = useCallback(() => {
-    setUser(auth.getCurrentUser());
+    const next = auth.getCurrentUser();
+    setUser(next);
+    persistNavRole(typeof next?.role === "string" ? next.role : null);
   }, []);
 
   useEffect(() => {
@@ -37,7 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       const ok = await auth.refreshToken();
       if (cancelled) return;
-      if (ok) syncUser();
+      if (ok) {
+        syncUser();
+      } else {
+        persistNavRole(null);
+        setUser(null);
+      }
       setIsLoading(false);
     })();
     return () => {
@@ -59,6 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await auth.logout();
+    getQueryClient().clear();
+    persistNavRole(null);
     syncUser();
   }, [syncUser]);
 

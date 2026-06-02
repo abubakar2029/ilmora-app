@@ -6,10 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import AccountTypeBadge from "@/components/profile/account-type-badge";
 import AdminProfileNotice from "@/components/profile/admin-profile-notice";
+import type { MentorBadge } from "@/lib/mentor-api";
 import { ProfileAiNotice, ProfileFieldInput } from "@/components/profile/profile-field";
 import { ApiError, apiFetch } from "@/lib/api";
 import {
-  MENTOR_PROFILE_FIELDS,
+  MENTOR_PROFILE_FORM_FIELDS,
   STUDENT_PROFILE_FIELDS,
   type ProfileFieldDef,
 } from "@/lib/profile-fields";
@@ -32,28 +33,63 @@ export type MentorProfileDto = {
   headline: string;
   expertise: string;
   availability: string;
+  availability_slots?: { weekday: number; start: string; end: string }[];
+  badges?: MentorBadge[];
 };
 
 function isStudentProfile(p: StudentProfileDto | MentorProfileDto): p is StudentProfileDto {
   return "goals" in p && "background" in p;
 }
 
-function ProcessingBanner({ onDismiss }: { onDismiss: () => void }) {
+function ProcessingBanner({ onDismiss, role }: { onDismiss: () => void; role?: string }) {
   return (
     <div
       role="status"
-      className="mb-6 flex flex-col gap-2 rounded-lg border border-primary/30 bg-secondary px-4 py-3 text-sm text-secondary-foreground sm:flex-row sm:items-center sm:justify-between"
+      className="mb-6 flex flex-col gap-3 rounded-lg border border-primary/30 bg-secondary px-4 py-3 text-sm text-secondary-foreground"
     >
       <p className="text-pretty">
-        Profile saved. We are building your AI profile for matches and your journey — check back shortly.
+        Profile saved. Run matching now — no need to wait for background processing.
       </p>
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="shrink-0 text-xs font-medium text-primary underline-offset-2 hover:underline"
-      >
-        Dismiss
-      </button>
+      <div className="flex flex-wrap gap-2">
+        {role === "student" ? (
+          <>
+            <Link
+              href="/dashboard/inbox?find=1"
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Find mentors
+            </Link>
+            <Link
+              href="/dashboard/my-feed?find=1"
+              className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+            >
+              Find blogs
+            </Link>
+          </>
+        ) : role === "mentor" ? (
+          <>
+            <Link
+              href="/dashboard/inbox"
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Mentee inbox
+            </Link>
+            <Link
+              href="/dashboard/inbox?find=1"
+              className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+            >
+              Find students
+            </Link>
+          </>
+        ) : null}
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="px-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
+        >
+          Dismiss
+        </button>
+      </div>
     </div>
   );
 }
@@ -70,7 +106,7 @@ export default function DashboardProfilePage() {
   const [showBanner, setShowBanner] = useState(false);
 
   const [student, setStudent] = useState({ headline: "", skills: "", goals: "", background: "" });
-  const [mentor, setMentor] = useState({ headline: "", expertise: "", availability: "" });
+  const [mentor, setMentor] = useState({ headline: "", expertise: "" });
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -78,7 +114,7 @@ export default function DashboardProfilePage() {
     if (isStudentProfile(p)) {
       setStudent({ headline: p.headline, skills: p.skills, goals: p.goals, background: p.background });
     } else {
-      setMentor({ headline: p.headline, expertise: p.expertise, availability: p.availability });
+      setMentor({ headline: p.headline, expertise: p.expertise });
     }
   }, []);
 
@@ -120,8 +156,12 @@ export default function DashboardProfilePage() {
 
   useEffect(() => {
     if (authLoading) return;
+    if (role === "mentor" || role === "student") {
+      router.replace("/dashboard");
+      return;
+    }
     void fetchProfile();
-  }, [authLoading, fetchProfile]);
+  }, [authLoading, fetchProfile, role, router]);
 
   async function parseApiError(e: unknown): Promise<string> {
     if (e instanceof ApiError) {
@@ -235,19 +275,16 @@ export default function DashboardProfilePage() {
   const isMentorRole = role === "mentor";
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">Profile</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Tell us about yourself so we can personalize matches and your journey.
-          </p>
-        </div>
-        <Link href="/dashboard" className="text-sm font-medium text-primary hover:underline">
-          ← Dashboard
-        </Link>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">Profile</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isMentorRole
+            ? "Edit your headline, expertise, and weekly hours."
+            : "Tell us about yourself so we can personalize matches and your journey."}
+        </p>
       </div>
 
-      {showBanner ? <ProcessingBanner onDismiss={() => setShowBanner(false)} /> : null}
+      {showBanner ? <ProcessingBanner onDismiss={() => setShowBanner(false)} role={role} /> : null}
 
       <AccountTypeBadge role={role} />
 
@@ -270,7 +307,7 @@ export default function DashboardProfilePage() {
             >
               {isStudentRole
                 ? renderFields(STUDENT_PROFILE_FIELDS, studentValue, setStudentField, false, "c-")
-                : renderFields(MENTOR_PROFILE_FIELDS, mentorValue, setMentorField, false, "c-")}
+                : renderFields(MENTOR_PROFILE_FORM_FIELDS, mentorValue, setMentorField, false, "c-")}
               {submitError ? <p className="text-sm text-red-500">{submitError}</p> : null}
               <button
                 type="submit"
@@ -341,9 +378,40 @@ export default function DashboardProfilePage() {
                   !editing,
                   "e-",
                 )
-              : renderFields(MENTOR_PROFILE_FIELDS, mentorValue, setMentorField, !editing, "e-")}
+              : renderFields(MENTOR_PROFILE_FORM_FIELDS, mentorValue, setMentorField, !editing, "e-")}
           </div>
           {submitError ? <p className="mt-4 text-sm text-red-500">{submitError}</p> : null}
+          {isMentorRole && profile && !isStudentProfile(profile) ? (
+            <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-4">
+              <Link
+                href="/dashboard"
+                className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                ← Dashboard
+              </Link>
+              <Link
+                href="/dashboard/inbox?find=1"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted"
+              >
+                Find students
+              </Link>
+            </div>
+          ) : isStudentRole ? (
+            <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-4">
+              <Link
+                href="/dashboard/inbox?find=1"
+                className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                Find mentors
+              </Link>
+              <Link
+                href="/dashboard/my-feed?find=1"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted"
+              >
+                Find blogs
+              </Link>
+            </div>
+          ) : null}
         </div>
       )}
     </div>

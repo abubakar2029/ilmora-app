@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
+import { QueryProvider } from "@/providers/query-provider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -45,7 +46,9 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} ${geistMono.className} antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
+        <QueryProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

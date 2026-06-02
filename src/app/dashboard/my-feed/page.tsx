@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 
 import { ApiError, apiFetch } from "@/lib/api";
 import type { FeedItem } from "@/lib/blogs";
 import { previewContent } from "@/lib/blogs";
+import { findBlogFeed } from "@/lib/matching-api";
+import { PageSkeleton } from "@/components/ui/loading";
 import { useAuth } from "@/context/AuthContext";
 
 const API_FEED = "/api/blogs/my-feed/";
@@ -24,6 +26,7 @@ export default function MyFeedPage() {
 
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [finding, setFinding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -46,24 +49,33 @@ export default function MyFeedPage() {
     }
   }, [role]);
 
+  const runFind = useCallback(async () => {
+    if (role !== "student") return;
+    setFinding(true);
+    setError(null);
+    try {
+      setItems(await findBlogFeed<FeedItem>());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not find stories");
+    } finally {
+      setFinding(false);
+    }
+  }, [role]);
+
   useEffect(() => {
     if (authLoading) return;
     void load();
   }, [authLoading, load]);
 
+  useEffect(() => {
+    if (authLoading || loading) return;
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("find") !== "1") return;
+    void runFind();
+  }, [authLoading, loading, runFind]);
+
   if (authLoading || loading) {
-    return (
-      <>
-        <div className="mx-auto max-w-3xl">
-          <div className="mb-8 h-9 w-56 animate-pulse rounded-lg bg-muted" />
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-40 animate-pulse rounded-xl bg-muted/70" />
-            ))}
-          </div>
-        </div>
-      </>
-    );
+    return <PageSkeleton className="mx-auto max-w-3xl" label="Loading your feed…" />;
   }
 
   if (role !== "student") {
@@ -82,14 +94,24 @@ export default function MyFeedPage() {
   return (
     <>
       <div className="mx-auto max-w-3xl">
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">My feed</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Stories matched to your profile.{" "}
-            <Link href="/blogs" className="font-medium text-primary hover:underline">
-              View all public stories
-            </Link>
-          </p>
+        <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">My feed</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Stories matched to your profile.{" "}
+              <Link href="/blogs" className="font-medium text-primary hover:underline">
+                View all public stories
+              </Link>
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={finding}
+            onClick={() => void runFind()}
+            className="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
+            {finding ? "Finding…" : "Find blogs"}
+          </button>
         </header>
 
         {error ? (
@@ -99,9 +121,17 @@ export default function MyFeedPage() {
         ) : null}
 
         {items.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground text-pretty">
-            Your personalized feed will appear here once more stories are published.
-          </p>
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground text-pretty">
+            <p>No personalized stories yet. Complete your profile, then find blogs — no need to wait.</p>
+            <button
+              type="button"
+              disabled={finding}
+              onClick={() => void runFind()}
+              className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              {finding ? "Finding…" : "Find blogs"}
+            </button>
+          </div>
         ) : (
           <ul className="space-y-6">
             {items.map((item) => {

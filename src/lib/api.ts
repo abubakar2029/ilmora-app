@@ -6,8 +6,20 @@ export class ApiError extends Error {
     public body: unknown,
     message?: string,
   ) {
-    super(message ?? `HTTP ${status}`);
+    super(message ?? ApiError.messageFromBody(body, status));
     this.name = "ApiError";
+  }
+
+  static messageFromBody(body: unknown, status = 0): string {
+    if (body && typeof body === "object") {
+      const o = body as Record<string, unknown>;
+      if (typeof o.detail === "string") return o.detail;
+      for (const val of Object.values(o)) {
+        if (Array.isArray(val) && typeof val[0] === "string") return val[0];
+        if (typeof val === "string") return val;
+      }
+    }
+    return status ? `Request failed (${status})` : "Request failed";
   }
 }
 
@@ -22,7 +34,7 @@ function getApiBase(): string {
  */
 export async function apiFetch(
   path: string,
-  init: RequestInit = {},
+  init: RequestInit & { signal?: AbortSignal } = {},
   allowRefreshRetry = true,
 ): Promise<Response> {
   const base = getApiBase();

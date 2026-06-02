@@ -61,13 +61,39 @@ export const MENTOR_PROFILE_FIELDS: ProfileFieldDef[] = [
     placeholder: "e.g. Career transitions, ML interviews, UX portfolios",
     rows: 4,
   },
+];
+
+/** Headline + expertise only; weekly hours come from the calendar below. */
+export const MENTOR_PROFILE_FORM_FIELDS = MENTOR_PROFILE_FIELDS;
+
+export const MENTOR_SOCIAL_FIELDS: ProfileFieldDef[] = [
   {
-    id: "availability",
-    label: "Availability",
-    hint: "How and when you can help (not used for AI matching).",
-    aiPurpose: "Displayed to students; included in mentor profile text.",
-    placeholder: "e.g. 2 hrs/week, async chat, video calls on weekends",
-    rows: 3,
+    id: "contact_email",
+    label: "Contact email",
+    hint: "Optional public email for students (can differ from login email).",
+    aiPurpose: "Not used for matching.",
+    placeholder: "you@example.com",
+  },
+  {
+    id: "linkedin_url",
+    label: "LinkedIn",
+    hint: "Full profile URL.",
+    aiPurpose: "Shown on your public page.",
+    placeholder: "https://linkedin.com/in/yourname",
+  },
+  {
+    id: "instagram_url",
+    label: "Instagram",
+    hint: "Full profile URL.",
+    aiPurpose: "Shown on your public page.",
+    placeholder: "https://instagram.com/yourname",
+  },
+  {
+    id: "facebook_url",
+    label: "Facebook",
+    hint: "Full profile or page URL.",
+    aiPurpose: "Shown on your public page.",
+    placeholder: "https://facebook.com/yourname",
   },
 ];
 

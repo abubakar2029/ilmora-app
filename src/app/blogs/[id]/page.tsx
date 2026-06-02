@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import AppShell from "@/components/app-shell";
+import BlogContent from "@/components/blog/blog-content";
 import { ApiError, apiFetch } from "@/lib/api";
 import type { Blog } from "@/lib/blogs";
 
@@ -93,12 +94,7 @@ export default function BlogDetailPage() {
           </p>
         </header>
 
-        <div
-          className="prose-blog mt-10 max-w-none text-base leading-relaxed text-foreground [&_p+p]:mt-4"
-          style={{ whiteSpace: "pre-wrap" }}
-        >
-          {blog.content}
-        </div>
+        <BlogContent content={blog.content} className="mt-10" />
       </article>
     </AppShell>
   );
