@@ -7,6 +7,7 @@ import { Suspense, useState } from "react";
 import AuthDivider from "@/components/auth-divider";
 import OAuthButtons from "@/components/oauth-buttons";
 import { useAuth } from "@/context/AuthContext";
+import { getCurrentUser } from "@/lib/auth";
 
 const inputClass =
   "w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring";
@@ -30,7 +31,14 @@ function LoginForm() {
     setSubmitting(true);
     try {
       await login(email, password);
-      router.push(from.startsWith("/") ? from : "/dashboard");
+      const role = getCurrentUser()?.role;
+      const target =
+        role === "admin"
+          ? "/admin"
+          : from.startsWith("/") && from !== "/admin"
+            ? from
+            : "/dashboard";
+      router.push(target);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");
