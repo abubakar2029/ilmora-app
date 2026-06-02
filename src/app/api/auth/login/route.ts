@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { getBackendBaseUrl } from "@/lib/server/backend-url";
 import { applyRefreshCookie } from "@/lib/server/auth-cookies";
+import { getBackendBaseUrl, isMisconfiguredBackendUrl } from "@/lib/server/backend-url";
 
 export async function POST(request: Request) {
   let body: { email?: string; password?: string };
@@ -12,14 +12,34 @@ export async function POST(request: Request) {
   }
 
   const backend = getBackendBaseUrl();
-  const res = await fetch(`${backend}/api/auth/login/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: body.email,
-      password: body.password,
-    }),
-  });
+  if (isMisconfiguredBackendUrl(backend)) {
+    return NextResponse.json(
+      {
+        detail:
+          "Backend URL is not configured on Vercel. Set BACKEND_URL to https://web-production-0723e.up.railway.app and redeploy.",
+      },
+      { status: 503 },
+    );
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${backend}/api/auth/login/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: body.email,
+        password: body.password,
+      }),
+    });
+  } catch {
+    return NextResponse.json(
+      {
+        detail: `Cannot reach backend at ${backend}. Check BACKEND_URL on Vercel and that Railway is online.`,
+      },
+      { status: 502 },
+    );
+  }
 
   const data = await res.json().catch(() => ({}));
 
@@ -34,7 +54,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ detail: "Invalid token response from server" }, { status: 502 });
   }
 
-  const response = NextResponse.json({ access });
-  applyRefreshCookie(response, refresh);
-  return response;
+  try {
+    const response = NextResponse.json({ access });
+    applyRefreshCookie(response, refresh);
+    return response;
+  } catch {
+    return NextResponse.json({ detail: "Could not set session cookie" }, { status: 500 });
+  }
 }

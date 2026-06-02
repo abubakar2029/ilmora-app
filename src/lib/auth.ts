@@ -60,9 +60,13 @@ export async function login(email: string, password: string): Promise<void> {
   });
   const data = (await res.json().catch(() => ({}))) as { access?: string; detail?: string };
   if (!res.ok) {
-    throw new Error(
-      typeof data.detail === "string" ? data.detail : res.statusText || "Login failed",
-    );
+    const message =
+      typeof data.detail === "string"
+        ? data.detail
+        : res.status === 500 && !data.detail
+          ? "Login service error. Check Vercel BACKEND_URL points to your Railway API."
+          : res.statusText || "Login failed";
+    throw new Error(message);
   }
   if (!data.access) {
     throw new Error("Invalid login response");
