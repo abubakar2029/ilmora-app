@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import AppShell from "@/components/app-shell";
 import JourneyDemoBanner from "@/components/journey-demo-banner";
@@ -39,8 +40,10 @@ function JourneySkeleton() {
 }
 
 function JourneyContent() {
-  const { isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const { showToast } = useToast();
+  const role = typeof user?.role === "string" ? user.role : "";
 
   const [steps, setSteps] = useState<JourneyStep[]>([]);
   const [isDemo, setIsDemo] = useState(false);
@@ -78,8 +81,12 @@ function JourneyContent() {
 
   useEffect(() => {
     if (authLoading) return;
+    if (role === "admin") {
+      router.replace("/admin");
+      return;
+    }
     void loadJourney();
-  }, [authLoading, loadJourney]);
+  }, [authLoading, loadJourney, role, router]);
 
   async function onRegenerate() {
     setRegenerating(true);
@@ -106,6 +113,8 @@ function JourneyContent() {
       setRegenerating(false);
     }
   }
+
+  if (role === "admin") return null;
 
   return (
     <div className="relative w-full">

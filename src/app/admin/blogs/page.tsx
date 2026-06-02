@@ -22,7 +22,7 @@ function canApproveInList(status: Blog["status"]): boolean {
 export default function AdminBlogsPage() {
   const { showToast } = useToast();
   const { approveBlog, deleteBlog, reviseBlog, ADMIN_PAGE_SIZE } = useAdminMutations();
-  const [filter, setFilter] = useState<Filter>("pending");
+  const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -111,7 +111,7 @@ export default function AdminBlogsPage() {
   return (
     <section>
       <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div className="flex flex-wrap gap-2">{filterBtn("pending", "Pending")}{filterBtn("needs_revision", "Revision")}{filterBtn("published", "Published")}{filterBtn("all", "All")}</div>
+        <div className="flex flex-wrap gap-2">{filterBtn("all", "All")}{filterBtn("pending", "Pending")}{filterBtn("needs_revision", "Revision")}{filterBtn("published", "Published")}</div>
         <div className="min-w-[200px] flex-1">
           <label htmlFor="blog-search" className="block text-xs font-medium text-muted-foreground">
             Search title, content, author
