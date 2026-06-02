@@ -110,19 +110,17 @@ export default function AdminBlogsPage() {
 
   return (
     <section>
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-2">{filterBtn("all", "All")}{filterBtn("pending", "Pending")}{filterBtn("needs_revision", "Revision")}{filterBtn("published", "Published")}</div>
         <div className="min-w-[200px] flex-1">
-          <label htmlFor="blog-search" className="block text-xs font-medium text-muted-foreground">
-            Search title, content, author
-          </label>
           <input
             id="blog-search"
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search stories…"
-            className="mt-1 w-full max-w-md rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            aria-label="Search stories by title, content, or author"
+            className="w-full max-w-md rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         {isFetching && !isLoading ? (

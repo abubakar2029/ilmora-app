@@ -17,9 +17,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <h1 className="text-2xl font-bold tracking-tight text-foreground lg:text-3xl">
                 Admin panel
               </h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Story moderation, users, and community announcements.
-              </p>
             </header>
             <AdminNav />
             {children}
