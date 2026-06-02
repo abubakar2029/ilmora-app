@@ -34,7 +34,7 @@ function getApiBase(): string {
  */
 export async function apiFetch(
   path: string,
-  init: RequestInit & { signal?: AbortSignal } = {},
+  init: RequestInit = {},
   allowRefreshRetry = true,
 ): Promise<Response> {
   const base = getApiBase();
