@@ -105,18 +105,6 @@ type ConversationOptions = {
   pollIntervalMs?: number;
 };
 
-function placeholderForConnection(connectionId: number) {
-  return (previousData: ConversationDetail | undefined, previousQuery: { queryKey: unknown }) => {
-    const prevId = Array.isArray(previousQuery?.queryKey)
-      ? previousQuery.queryKey[2]
-      : undefined;
-    if (prevId === connectionId && previousData && isConversationDetail(previousData)) {
-      return previousData;
-    }
-    return undefined;
-  };
-}
-
 export function useConversation(
   connectionId: number | null,
   options?: ConversationOptions,
@@ -130,10 +118,6 @@ export function useConversation(
     enabled: !authLoading && Boolean(user) && connectionId != null && connectionId > 0,
     staleTime: 15_000,
     gcTime: 10 * 60_000,
-    placeholderData:
-      connectionId != null && connectionId > 0
-        ? placeholderForConnection(connectionId)
-        : undefined,
     refetchOnWindowFocus: true,
     refetchInterval: (query) => {
       if (
