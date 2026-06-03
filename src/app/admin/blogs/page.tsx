@@ -110,9 +110,14 @@ export default function AdminBlogsPage() {
 
   return (
     <section>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap gap-2">{filterBtn("all", "All")}{filterBtn("pending", "Pending")}{filterBtn("needs_revision", "Revision")}{filterBtn("published", "Published")}</div>
-        <div className="min-w-[200px] flex-1">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {filterBtn("all", "All")}
+          {filterBtn("pending", "Pending")}
+          {filterBtn("needs_revision", "Revision")}
+          {filterBtn("published", "Published")}
+        </div>
+        <div className="flex w-full items-center gap-2 sm:w-auto sm:min-w-[min(100%,280px)] sm:max-w-md">
           <input
             id="blog-search"
             type="search"
@@ -120,12 +125,12 @@ export default function AdminBlogsPage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search stories…"
             aria-label="Search stories by title, content, or author"
-            className="w-full max-w-md rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className="h-10 w-full rounded-lg border-2 border-foreground/15 bg-card px-3 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-ring/30"
           />
+          {isFetching && !isLoading ? (
+            <span className="shrink-0 text-xs text-muted-foreground">Refreshing…</span>
+          ) : null}
         </div>
-        {isFetching && !isLoading ? (
-          <span className="text-xs text-muted-foreground">Refreshing…</span>
-        ) : null}
       </div>
 
       {error ? (

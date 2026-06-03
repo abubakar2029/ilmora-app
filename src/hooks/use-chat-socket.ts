@@ -3,8 +3,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { mergeServerMessage } from "@/lib/chat-cache";
 import { getAccessToken } from "@/lib/auth";
 import { getChatWebSocketUrl, parseChatWsEvent, type ChatWsEvent } from "@/lib/chat-ws";
+import { trackError } from "@/lib/error-tracker";
 import { patchThreadPreview, patchThreadUnread } from "@/hooks/queries/use-messages";
 import { isConversationDetail, type ChatMessage, type ConversationDetail } from "@/lib/messaging-api";
 import { queryKeys } from "@/lib/query-keys";
@@ -39,24 +41,26 @@ export function useChatSocket({
         queryKeys.messages.conversation(connectionId),
         (prev) => {
           if (!prev || !isConversationDetail(prev)) return prev;
-          if (prev.messages.some((m) => m.id === msg.id)) {
+          if (msg.id > 0 && prev.messages.some((m) => m.id === msg.id)) {
             return prev;
           }
-          let messages = prev.messages;
           if (msg.client_id) {
-            const idx = messages.findIndex(
-              (m) => m.client_id === msg.client_id && (m.id < 0 || m.id !== msg.id),
-            );
-            if (idx >= 0) {
-              messages = [...messages];
-              messages[idx] = msg;
-              return { ...prev, messages };
-            }
+            const existing = prev.messages.find((m) => m.client_id === msg.client_id);
+            if (existing && existing.id === msg.id) return prev;
           }
-          if (messages.some((m) => m.client_id && msg.client_id && m.client_id === msg.client_id)) {
-            return prev;
+          const chatMsg: ChatMessage = {
+            id: msg.id,
+            sender_id: msg.sender_id,
+            body: msg.body,
+            client_id: msg.client_id,
+            read_at: msg.read_at,
+            created_at: msg.created_at,
+            is_mine: msg.is_mine,
+          };
+          if (msg.client_id) {
+            return mergeServerMessage(prev, chatMsg, msg.client_id);
           }
-          return { ...prev, messages: [...messages, msg] };
+          return mergeServerMessage(prev, chatMsg);
         },
       );
       if (connectionId) {
@@ -136,13 +140,16 @@ export function useChatSocket({
         reconnectRef.current = setTimeout(connect, 2500);
       }
     };
-    ws.onerror = () => ws.close();
+    ws.onerror = () => {
+      trackError("chat:ws", "WebSocket error", { connectionId });
+      ws.close();
+    };
     ws.onmessage = (ev) => {
       try {
         const parsed = parseChatWsEvent(JSON.parse(String(ev.data)));
         if (parsed) handleEvent(parsed);
-      } catch {
-        /* ignore */
+      } catch (err) {
+        trackError("chat:ws", err, { connectionId, phase: "parse" });
       }
     };
   }, [connectionId, enabled, handleEvent]);

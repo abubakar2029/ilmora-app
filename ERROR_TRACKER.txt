@@ -1,0 +1,55 @@
+================================================================================
+ILMORA — ERROR & FIX LOG (frontend / ilmora-app)
+Append new entries at the bottom. Do not put secrets or API keys here.
+================================================================================
+
+[2026-06-02] Chat: sent message shows one tick (✓) then disappears
+--------------------------------------------------------------------------------
+Symptom:
+  User sends a message; bubble appears briefly with a single check mark, then
+  vanishes. Thread list may still look empty or unchanged.
+
+Root cause:
+  useConversation polls the server every 10s. While the message was still
+  optimistic (negative temp id), a background GET could return the old message
+  list and React Query replaced the whole cache — wiping the optimistic bubble.
+  (Same class of bug as an earlier fix that removed invalidateQueries on send;
+  polling refetch reintroduced the wipe.)
+
+Fix:
+  - src/lib/chat-cache.ts — mergeConversationFromServer() keeps optimistic and
+    in-flight client_id messages when merging server fetch into cache.
+  - use-messages.ts — conversation queryFn merges cached + server on every fetch.
+  - use-chat-socket.ts — WebSocket incoming messages use mergeServerMessage().
+  - send onError logs to error-tracker (optional runtime log).
+
+Files changed:
+  src/lib/chat-cache.ts (new)
+  src/hooks/queries/use-messages.ts
+  src/hooks/use-chat-socket.ts
+  src/components/chat/chat-window.tsx
+  src/lib/error-tracker.ts (new, browser session log for debugging)
+  src/providers/query-provider.tsx
+  docs/ERROR_TRACKING.md
+
+How to verify:
+  Open a chat, send several messages quickly, wait 15+ seconds — all bubbles stay.
+  DevTools: __ilmoraErrors() for runtime errors during testing.
+
+--------------------------------------------------------------------------------
+
+[2026-06-02] Admin UI: header alignment, remove extra labels
+--------------------------------------------------------------------------------
+Symptom:
+  Admin header content not vertically centered; subtitle and search label clutter.
+
+Fix:
+  admin-header.tsx — fixed height, centered flex row.
+  admin/layout.tsx — removed subtitle (earlier commit).
+  admin/blogs/page.tsx — removed "Search title..." label; border-2 on search input.
+
+Files changed:
+  src/components/admin/admin-header.tsx
+  src/app/admin/blogs/page.tsx
+
+================================================================================

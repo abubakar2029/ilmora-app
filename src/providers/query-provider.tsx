@@ -1,7 +1,9 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+
+import { installErrorTrackerGlobal } from "@/lib/error-tracker";
 
 const STALE_TIME = 2 * 60 * 1000;
 const GC_TIME = 15 * 60 * 1000;
@@ -38,6 +40,10 @@ export function getQueryClient(): QueryClient {
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   const [client] = useState(() => getQueryClient());
+
+  useEffect(() => {
+    installErrorTrackerGlobal();
+  }, []);
 
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }

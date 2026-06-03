@@ -17,6 +17,7 @@ import {
 } from "@/hooks/queries";
 import { useAuth } from "@/context/AuthContext";
 import { displayFirstName } from "@/lib/display-name";
+import { trackError } from "@/lib/error-tracker";
 import { isConversationDetail } from "@/lib/messaging-api";
 import type { ChatMessage } from "@/lib/messaging-api";
 
@@ -96,6 +97,12 @@ export default function ChatWindow({ connectionId, onBack }: Props) {
   useEffect(() => {
     lastMarkedIdRef.current = 0;
   }, [connectionId]);
+
+  useEffect(() => {
+    if (isError && error) {
+      trackError("chat:conversation", error, { connectionId });
+    }
+  }, [isError, error, connectionId]);
 
   useEffect(() => {
     if (!isSuccess) return;

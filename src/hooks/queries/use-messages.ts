@@ -14,6 +14,8 @@ import {
   type ChatThread,
   type ConversationDetail,
 } from "@/lib/messaging-api";
+import { mergeConversationFromServer, mergeServerMessage } from "@/lib/chat-cache";
+import { trackError } from "@/lib/error-tracker";
 import { queryKeys } from "@/lib/query-keys";
 
 /** Keep sidebar unread badge in sync without waiting for a threads refetch. */
@@ -68,25 +70,6 @@ function resolveUserId(user: Record<string, unknown> | null | undefined): number
   return undefined;
 }
 
-function mergeServerMessage(
-  prev: ConversationDetail,
-  serverMsg: ChatMessage,
-  clientId?: string,
-): ConversationDetail {
-  let messages = prev.messages.filter(
-    (m) => !(clientId && m.client_id === clientId && m.id < 0),
-  );
-  if (messages.some((m) => m.id === serverMsg.id)) {
-    messages = messages.map((m) => (m.id === serverMsg.id ? serverMsg : m));
-  } else {
-    messages = [...messages, serverMsg];
-  }
-  messages.sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-  );
-  return { ...prev, messages };
-}
-
 export function useChatThreads() {
   const { user, isLoading: authLoading } = useAuth();
 
@@ -109,12 +92,22 @@ export function useConversation(
   connectionId: number | null,
   options?: ConversationOptions,
 ) {
+  const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
   const pollMs = options?.pollIntervalMs ?? 0;
+  const conversationKey =
+    connectionId != null && connectionId > 0
+      ? queryKeys.messages.conversation(connectionId)
+      : null;
 
   return useQuery({
     queryKey: queryKeys.messages.conversation(connectionId ?? 0),
-    queryFn: ({ signal }) => fetchConversation(connectionId!, undefined, signal),
+    queryFn: async ({ signal }) => {
+      const server = await fetchConversation(connectionId!, undefined, signal);
+      if (!conversationKey) return server;
+      const cached = queryClient.getQueryData<ConversationDetail>(conversationKey);
+      return mergeConversationFromServer(cached, server);
+    },
     enabled: !authLoading && Boolean(user) && connectionId != null && connectionId > 0,
     staleTime: 15_000,
     gcTime: 10 * 60_000,
@@ -178,7 +171,11 @@ export function useMessageMutations(connectionId: number | null) {
       });
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err, variables, ctx) => {
+      trackError("chat:send", err, {
+        connectionId: connectionId ?? undefined,
+        clientId: variables.clientId,
+      });
       if (conversationKey && ctx?.prev) {
         queryClient.setQueryData(conversationKey, ctx.prev);
       }
