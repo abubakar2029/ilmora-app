@@ -38,6 +38,36 @@ How to verify:
 
 --------------------------------------------------------------------------------
 
+[2026-06-02] Chat: message still disappears after ✓ (regression)
+--------------------------------------------------------------------------------
+Symptom:
+  Same as above after first cache-merge fix; often after ~10s (poll) or when send fails.
+
+Root causes (multiple):
+  1. React Query poll/refetch replaced cache; merge in queryFn was not enough alone.
+  2. send API error triggered onError → restored pre-optimistic cache (removed bubble).
+  3. Production Railway used Gunicorn (WSGI only) — WebSockets/chat push did not work;
+     relied on aggressive 10s HTTP polling.
+  4. Gunicorn WEB_CONCURRENCY=2 + in-memory channel layer = broken WS fan-out.
+
+Fix:
+  - src/lib/pending-messages.ts — out-of-band registry; UI always merges pending sends.
+  - src/hooks/use-pending-messages.ts — re-render when pending set changes.
+  - chat-window.tsx — displayMessages = mergePendingMessages(); poll only if WS down.
+  - use-messages.ts — no rollback on send error; mark failed + keep bubble; structuralSharing: false.
+  - message-bubble.tsx — show Sending… / Failed to send.
+  - backend/scripts/railway_start.sh — Daphne (config.asgi) instead of Gunicorn.
+
+Files changed:
+  (see files above + backend/scripts/railway_start.sh)
+
+How to verify:
+  Send message with WS connected (header shows "online"); bubble stays.
+  If send fails, bubble turns red "Failed to send" instead of vanishing.
+  Railway logs: [railway_start] Starting Daphne (HTTP + WebSocket)...
+
+--------------------------------------------------------------------------------
+
 [2026-06-02] Admin UI: header alignment, remove extra labels
 --------------------------------------------------------------------------------
 Symptom:

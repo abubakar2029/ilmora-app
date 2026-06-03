@@ -1,7 +1,7 @@
 "use client";
 
 import ChatMessageBody from "@/components/chat/chat-message-body";
-import type { ChatMessage } from "@/lib/messaging-api";
+import type { PendingChatMessage } from "@/lib/pending-messages";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, {
@@ -18,23 +18,33 @@ function ReadTicks({ read }: { read: boolean }) {
   );
 }
 
-export default function MessageBubble({ message }: { message: ChatMessage }) {
+export default function MessageBubble({ message }: { message: PendingChatMessage }) {
   const mine = message.is_mine;
   const read = Boolean(message.read_at);
+  const pending = message.pendingStatus;
+  const failed = pending === "failed";
 
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
       <div
         className={`relative max-w-[min(85%,20rem)] rounded-2xl px-3.5 py-2 text-[14px] leading-snug shadow-sm
-          ${mine ? "rounded-br-md bg-[#0d9b83] text-white" : "rounded-bl-md border border-border/80 bg-card text-foreground"}
+          ${mine ? "rounded-br-md text-white" : "rounded-bl-md border border-border/80 bg-card text-foreground"}
+          ${failed ? "bg-red-600/90" : mine ? "bg-[#0d9b83]" : ""}
+          ${pending === "sending" && mine ? "opacity-90" : ""}
         `}
       >
         <ChatMessageBody text={message.body} />
         <div
-          className={`mt-1 flex items-center justify-end gap-0.5 text-[10px] ${mine ? "text-white/75" : "text-muted-foreground"}`}
+          className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${mine ? "text-white/75" : "text-muted-foreground"}`}
         >
+          {failed ? <span className="text-white/90">Failed to send</span> : null}
           <time dateTime={message.created_at}>{formatTime(message.created_at)}</time>
-          {mine ? <ReadTicks read={read} /> : null}
+          {mine && !failed ? <ReadTicks read={read} /> : null}
+          {mine && pending === "sending" && !failed ? (
+            <span className="text-white/70" aria-label="Sending">
+              …
+            </span>
+          ) : null}
         </div>
       </div>
     </div>

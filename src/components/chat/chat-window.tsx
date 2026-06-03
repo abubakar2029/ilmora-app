@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import MessageBubble from "@/components/chat/message-bubble";
 import ChatInput from "@/components/chat/chat-input";
 import { InlineLoader } from "@/components/ui/loading";
+import { usePendingMessagesRevision } from "@/hooks/use-pending-messages";
 import { useChatSocket } from "@/hooks/use-chat-socket";
 import {
   maxUnreadIncomingId,
@@ -18,8 +19,10 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { displayFirstName } from "@/lib/display-name";
 import { trackError } from "@/lib/error-tracker";
+import { mergePendingMessages } from "@/lib/pending-messages";
 import { isConversationDetail } from "@/lib/messaging-api";
 import type { ChatMessage } from "@/lib/messaging-api";
+import type { PendingChatMessage } from "@/lib/pending-messages";
 
 function dateLabel(iso: string) {
   const d = new Date(iso);
@@ -33,9 +36,9 @@ function dateLabel(iso: string) {
 
 type Row =
   | { type: "date"; key: string; label: string }
-  | { type: "msg"; key: string; message: ChatMessage };
+  | { type: "msg"; key: string; message: PendingChatMessage };
 
-function buildRows(messages: ChatMessage[]): Row[] {
+function buildRows(messages: PendingChatMessage[]): Row[] {
   const rows: Row[] = [];
   let lastDate = "";
   for (const m of messages) {
@@ -66,9 +69,7 @@ export default function ChatWindow({ connectionId, onBack }: Props) {
         : undefined;
   const { data: threads = [] } = useChatThreads();
   const thread = threads.find((t) => t.connection_id === connectionId);
-  const { data, isFetching, error, isSuccess, isError } = useConversation(connectionId, {
-    pollIntervalMs: 10_000,
-  });
+  const pendingRevision = usePendingMessagesRevision();
   const { sendMessage, typing, markRead } = useMessageMutations(connectionId);
   const { mutate: markReadMutate } = markRead;
 
@@ -87,6 +88,10 @@ export default function ChatWindow({ connectionId, onBack }: Props) {
     currentUserId,
     enabled: Boolean(connectionId),
     onIncomingMessage: handleIncomingMessage,
+  });
+
+  const { data, isFetching, error, isSuccess, isError } = useConversation(connectionId, {
+    pollIntervalMs: wsConnected ? 0 : 30_000,
   });
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -109,11 +114,16 @@ export default function ChatWindow({ connectionId, onBack }: Props) {
     patchThreadUnread(queryClient, connectionId, 0);
   }, [isSuccess, connectionId, queryClient]);
 
-  const rows = useMemo(() => buildRows(conversation?.messages ?? []), [conversation?.messages]);
+  const displayMessages = useMemo(
+    () => mergePendingMessages(connectionId, conversation?.messages ?? []),
+    [connectionId, conversation?.messages, pendingRevision],
+  );
+
+  const rows = useMemo(() => buildRows(displayMessages), [displayMessages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversation?.messages?.length, conversation?.other_typing, wsOtherTyping]);
+  }, [displayMessages.length, conversation?.other_typing, wsOtherTyping]);
 
   useEffect(() => {
     if (!isSuccess || !conversation?.messages.length) return;
@@ -126,7 +136,7 @@ export default function ChatWindow({ connectionId, onBack }: Props) {
 
   const handleSend = useCallback(
     (body: string) => {
-      const clientId = `c-${Date.now()}`;
+      const clientId = `c-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       void sendMessage.mutate({ body, clientId });
     },
     [sendMessage],

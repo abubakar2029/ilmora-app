@@ -16,6 +16,12 @@ import {
 } from "@/lib/messaging-api";
 import { mergeConversationFromServer, mergeServerMessage } from "@/lib/chat-cache";
 import { trackError } from "@/lib/error-tracker";
+import {
+  markPendingFailed,
+  mergePendingMessages,
+  registerPendingMessage,
+  resolvePendingMessage,
+} from "@/lib/pending-messages";
 import { queryKeys } from "@/lib/query-keys";
 
 /** Keep sidebar unread badge in sync without waiting for a threads refetch. */
@@ -106,11 +112,16 @@ export function useConversation(
       const server = await fetchConversation(connectionId!, undefined, signal);
       if (!conversationKey) return server;
       const cached = queryClient.getQueryData<ConversationDetail>(conversationKey);
-      return mergeConversationFromServer(cached, server);
+      const merged = mergeConversationFromServer(cached, server);
+      return {
+        ...merged,
+        messages: mergePendingMessages(connectionId!, merged.messages),
+      };
     },
     enabled: !authLoading && Boolean(user) && connectionId != null && connectionId > 0,
     staleTime: 15_000,
     gcTime: 10 * 60_000,
+    structuralSharing: false,
     refetchOnWindowFocus: true,
     refetchInterval: (query) => {
       if (
@@ -136,7 +147,7 @@ export function useMessageMutations(connectionId: number | null) {
       : null;
 
   const refreshThreads = () => {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.messages.threads });
+    void queryClient.refetchQueries({ queryKey: queryKeys.messages.threads });
   };
 
   const sendMessage = useMutation({
@@ -165,30 +176,57 @@ export function useMessageMutations(connectionId: number | null) {
         is_mine: true,
       };
 
+      registerPendingMessage(connectionId, optimistic, "sending");
+
       queryClient.setQueryData(conversationKey, {
         ...prev,
-        messages: [...prev.messages, optimistic],
+        messages: mergePendingMessages(connectionId, [...prev.messages, optimistic]),
       });
-      return { prev };
+      return { prev, clientId };
     },
     onError: (err, variables, ctx) => {
       trackError("chat:send", err, {
         connectionId: connectionId ?? undefined,
         clientId: variables.clientId,
       });
-      if (conversationKey && ctx?.prev) {
-        queryClient.setQueryData(conversationKey, ctx.prev);
+      if (connectionId && variables.clientId) {
+        markPendingFailed(connectionId, variables.clientId);
+      }
+      if (conversationKey && connectionId && variables.clientId) {
+        queryClient.setQueryData<ConversationDetail>(conversationKey, (current) => {
+          const base =
+            current && isConversationDetail(current)
+              ? current
+              : ctx?.prev && isConversationDetail(ctx.prev)
+                ? ctx.prev
+                : null;
+          if (!base) return current;
+          return {
+            ...base,
+            messages: mergePendingMessages(connectionId, base.messages),
+          };
+        });
+      }
+      if (conversationKey) {
+        void queryClient.refetchQueries({ queryKey: conversationKey });
       }
     },
     onSuccess: (serverMsg, variables) => {
       if (!conversationKey || !connectionId) return;
+      if (variables.clientId) {
+        resolvePendingMessage(connectionId, variables.clientId);
+      }
       const fetchState = queryClient.getQueryState(conversationKey);
       const prev = queryClient.getQueryData<ConversationDetail>(conversationKey);
 
       if (fetchState?.status === "success" && prev && isConversationDetail(prev)) {
         queryClient.setQueryData<ConversationDetail>(conversationKey, (current) => {
           const base = current && isConversationDetail(current) ? current : prev;
-          return mergeServerMessage(base, serverMsg, variables.clientId);
+          const merged = mergeServerMessage(base, serverMsg, variables.clientId);
+          return {
+            ...merged,
+            messages: mergePendingMessages(connectionId, merged.messages),
+          };
         });
       } else {
         void queryClient.refetchQueries({ queryKey: conversationKey });

@@ -83,6 +83,25 @@ export async function fetchConversation(
   return data;
 }
 
+function normalizeChatMessage(data: unknown): ChatMessage {
+  if (!data || typeof data !== "object") {
+    throw new ApiError(500, data, "Invalid message response from server.");
+  }
+  const m = data as ChatMessage;
+  if (typeof m.id !== "number" || typeof m.body !== "string") {
+    throw new ApiError(500, data, "Invalid message response from server.");
+  }
+  return {
+    id: m.id,
+    sender_id: typeof m.sender_id === "number" ? m.sender_id : 0,
+    body: m.body,
+    client_id: typeof m.client_id === "string" ? m.client_id : "",
+    read_at: m.read_at ?? null,
+    created_at: typeof m.created_at === "string" ? m.created_at : new Date().toISOString(),
+    is_mine: Boolean(m.is_mine),
+  };
+}
+
 export async function sendChatMessage(
   connectionId: number,
   body: string,
@@ -94,7 +113,7 @@ export async function sendChatMessage(
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, data);
-  return data as ChatMessage;
+  return normalizeChatMessage(data);
 }
 
 export async function markChatRead(connectionId: number, upToMessageId?: number): Promise<void> {

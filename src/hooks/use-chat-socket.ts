@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { mergeServerMessage } from "@/lib/chat-cache";
+import { mergePendingMessages, resolvePendingMessage } from "@/lib/pending-messages";
 import { getAccessToken } from "@/lib/auth";
 import { getChatWebSocketUrl, parseChatWsEvent, type ChatWsEvent } from "@/lib/chat-ws";
 import { trackError } from "@/lib/error-tracker";
@@ -57,10 +58,16 @@ export function useChatSocket({
             created_at: msg.created_at,
             is_mine: msg.is_mine,
           };
-          if (msg.client_id) {
-            return mergeServerMessage(prev, chatMsg, msg.client_id);
+          let merged = msg.client_id
+            ? mergeServerMessage(prev, chatMsg, msg.client_id)
+            : mergeServerMessage(prev, chatMsg);
+          if (msg.client_id && msg.is_mine) {
+            resolvePendingMessage(connectionId, msg.client_id);
           }
-          return mergeServerMessage(prev, chatMsg);
+          return {
+            ...merged,
+            messages: mergePendingMessages(connectionId, merged.messages),
+          };
         },
       );
       if (connectionId) {

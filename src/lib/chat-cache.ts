@@ -18,10 +18,18 @@ export function mergeConversationFromServer(
   );
 
   const extra: ChatMessage[] = [];
+  const recentCutoff = Date.now() - 3 * 60 * 1000;
   for (const m of cached.messages) {
     if (m.id > 0 && serverById.has(m.id)) continue;
     if (m.client_id && serverClientIds.has(m.client_id)) continue;
-    if (m.id < 0 || (m.is_mine && m.client_id && !serverClientIds.has(m.client_id))) {
+    const recent =
+      Number.isFinite(new Date(m.created_at).getTime()) &&
+      new Date(m.created_at).getTime() >= recentCutoff;
+    if (
+      m.id < 0 ||
+      (m.is_mine && m.client_id && !serverClientIds.has(m.client_id)) ||
+      (m.is_mine && m.id > 0 && !serverById.has(m.id) && recent)
+    ) {
       extra.push(m);
     }
   }
