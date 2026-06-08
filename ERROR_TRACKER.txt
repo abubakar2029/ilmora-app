@@ -82,4 +82,19 @@ Files changed:
   src/components/admin/admin-header.tsx
   src/app/admin/blogs/page.tsx
 
+--------------------------------------------------------------------------------
+
+[2026-06-08] Chat: one tick on sender, message never reaches other user
+--------------------------------------------------------------------------------
+Symptom:
+  Sender sees single checkmark; recipient never sees message. Header shows syncing.
+
+Root causes:
+  1. Single tick means "not read", not "delivered" — UI showed tick while still sending.
+  2. WebSocket not connected on production (JWT / Daphne / REDIS_URL).
+  3. Backend rolled back Message save when Redis broadcast failed (see backend log).
+
+Fix:
+  use-chat-socket.ts, chat-window.tsx, message-bubble.tsx, messaging/services.py
+
 ================================================================================

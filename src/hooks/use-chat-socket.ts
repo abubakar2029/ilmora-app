@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { mergeServerMessage } from "@/lib/chat-cache";
 import { mergePendingMessages, resolvePendingMessage } from "@/lib/pending-messages";
-import { getAccessToken } from "@/lib/auth";
+import { getAccessToken, refreshToken } from "@/lib/auth";
 import { getChatWebSocketUrl, parseChatWsEvent, type ChatWsEvent } from "@/lib/chat-ws";
 import { trackError } from "@/lib/error-tracker";
 import { patchThreadPreview, patchThreadUnread } from "@/hooks/queries/use-messages";
@@ -129,36 +129,45 @@ export function useChatSocket({
 
   const connect = useCallback(() => {
     if (!connectionId || !enabled) return;
-    const token = getAccessToken();
-    if (!token) return;
 
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-
-    const ws = new WebSocket(getChatWebSocketUrl(connectionId, token));
-    wsRef.current = ws;
-
-    ws.onopen = () => setConnected(true);
-    ws.onclose = () => {
+    const openSocket = async () => {
       setConnected(false);
-      if (enabled && connectionId) {
-        reconnectRef.current = setTimeout(connect, 2500);
+      await refreshToken().catch(() => false);
+      const token = getAccessToken();
+      if (!token) {
+        trackError("chat:ws", "No access token for WebSocket", { connectionId });
+        return;
       }
-    };
-    ws.onerror = () => {
-      trackError("chat:ws", "WebSocket error", { connectionId });
-      ws.close();
-    };
-    ws.onmessage = (ev) => {
-      try {
-        const parsed = parseChatWsEvent(JSON.parse(String(ev.data)));
-        if (parsed) handleEvent(parsed);
-      } catch (err) {
-        trackError("chat:ws", err, { connectionId, phase: "parse" });
+
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
       }
+
+      const ws = new WebSocket(getChatWebSocketUrl(connectionId, token));
+      wsRef.current = ws;
+
+      ws.onclose = () => {
+        setConnected(false);
+        if (enabled && connectionId) {
+          reconnectRef.current = setTimeout(connect, 2500);
+        }
+      };
+      ws.onerror = () => {
+        trackError("chat:ws", "WebSocket error", { connectionId });
+        ws.close();
+      };
+      ws.onmessage = (ev) => {
+        try {
+          const parsed = parseChatWsEvent(JSON.parse(String(ev.data)));
+          if (parsed) handleEvent(parsed);
+        } catch (err) {
+          trackError("chat:ws", err, { connectionId, phase: "parse" });
+        }
+      };
     };
+
+    void openSocket();
   }, [connectionId, enabled, handleEvent]);
 
   useEffect(() => {

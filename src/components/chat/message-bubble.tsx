@@ -23,6 +23,8 @@ export default function MessageBubble({ message }: { message: PendingChatMessage
   const read = Boolean(message.read_at);
   const pending = message.pendingStatus;
   const failed = pending === "failed";
+  const confirmed = message.id > 0;
+  const sending = pending === "sending" || (mine && !confirmed && !failed);
 
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
@@ -38,13 +40,13 @@ export default function MessageBubble({ message }: { message: PendingChatMessage
           className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${mine ? "text-white/75" : "text-muted-foreground"}`}
         >
           {failed ? <span className="text-white/90">Failed to send</span> : null}
-          <time dateTime={message.created_at}>{formatTime(message.created_at)}</time>
-          {mine && !failed ? <ReadTicks read={read} /> : null}
-          {mine && pending === "sending" && !failed ? (
+          {sending && !failed ? (
             <span className="text-white/70" aria-label="Sending">
-              …
+              Sending…
             </span>
           ) : null}
+          <time dateTime={message.created_at}>{formatTime(message.created_at)}</time>
+          {mine && confirmed && !failed ? <ReadTicks read={read} /> : null}
         </div>
       </div>
     </div>

@@ -91,7 +91,7 @@ export default function ChatWindow({ connectionId, onBack }: Props) {
   });
 
   const { data, isFetching, error, isSuccess, isError } = useConversation(connectionId, {
-    pollIntervalMs: wsConnected ? 0 : 30_000,
+    pollIntervalMs: wsConnected ? 12_000 : 5_000,
   });
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -189,10 +189,8 @@ export default function ChatWindow({ connectionId, onBack }: Props) {
               <span className="font-medium text-primary">typing…</span>
             ) : wsConnected ? (
               <span className="text-emerald-600 dark:text-emerald-400">online</span>
-            ) : isFetching ? (
-              "syncing…"
             ) : (
-              conversation.other_role === "mentor" ? "Mentor" : "Student"
+              <span className="text-amber-600 dark:text-amber-400">live chat off — syncing every few seconds</span>
             )}
           </p>
         </div>
