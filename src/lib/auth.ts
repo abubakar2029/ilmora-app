@@ -109,6 +109,40 @@ export async function logout(): Promise<void> {
   setAccessToken(null);
 }
 
+export async function requestPasswordReset(email: string): Promise<string> {
+  const res = await fetch("/api/auth/password-reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const data = (await res.json().catch(() => ({}))) as { detail?: string };
+  if (!res.ok) {
+    throw new Error(typeof data.detail === "string" ? data.detail : "Could not send reset email");
+  }
+  return (
+    typeof data.detail === "string"
+      ? data.detail
+      : "If an account exists for that email, we sent a password reset link."
+  );
+}
+
+export async function confirmPasswordReset(
+  uid: string,
+  token: string,
+  password: string,
+  confirmPassword: string,
+): Promise<void> {
+  const res = await fetch("/api/auth/password-reset/confirm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ uid, token, password, confirm_password: confirmPassword }),
+  });
+  const data = (await res.json().catch(() => ({}))) as { detail?: string };
+  if (!res.ok) {
+    throw new Error(typeof data.detail === "string" ? data.detail : "Could not reset password");
+  }
+}
+
 /**
  * Use refresh token from httpOnly cookie to obtain a new access token.
  */

@@ -9,7 +9,7 @@ import { getCachedNavRole, useAuth } from "@/context/AuthContext";
 
 const EMAIL = "hello@ilmora.com";
 const WHATSAPP_URL = "https://wa.me/1234567890";
-const LINKEDIN_URL = "https://linkedin.com/company/ilmora";
+const LINKEDIN_URL = "https://linkedin.com/in/muhammadabu/";
 
 type NavRole = "student" | "mentor" | "admin";
 

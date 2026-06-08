@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
-import AuthDivider from "@/components/auth-divider";
-import OAuthButtons from "@/components/oauth-buttons";
 import { useAuth } from "@/context/AuthContext";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -23,7 +21,7 @@ function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
 
   const from = searchParams.get("from") || "/dashboard";
-  const oauthError = searchParams.get("error");
+  const resetSuccess = searchParams.get("reset") === "success";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,9 +55,11 @@ function LoginForm() {
         <p className="mt-1.5 text-sm text-muted-foreground">Sign in with your email and password.</p>
       </div>
 
-      <OAuthButtons isLoading={busy} />
-
-      <AuthDivider />
+      {resetSuccess ? (
+        <p className="mb-4 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-sm text-foreground">
+          Password updated. Sign in with your new password.
+        </p>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
@@ -81,9 +81,17 @@ function LoginForm() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="login-password" className="text-sm font-medium text-foreground">
-            Password
-          </label>
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="login-password" className="text-sm font-medium text-foreground">
+              Password
+            </label>
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <div className="relative">
             <input
               id="login-password"
@@ -110,7 +118,6 @@ function LoginForm() {
           </div>
         </div>
 
-        {oauthError ? <p className="text-sm text-red-500">{oauthError}</p> : null}
         {error ? <p className="text-sm text-red-500">{error}</p> : null}
 
         <button

@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import AuthDivider from "@/components/auth-divider";
-import OAuthButtons from "@/components/oauth-buttons";
 import { useAuth } from "@/context/AuthContext";
 
 const inputClass =
@@ -49,10 +47,6 @@ export default function RegisterPage() {
         <h1 className="mt-4 text-xl font-bold tracking-tight text-foreground">Create an account</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">Join as a student or mentor.</p>
       </div>
-
-      <OAuthButtons isLoading={busy} />
-
-      <AuthDivider />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
