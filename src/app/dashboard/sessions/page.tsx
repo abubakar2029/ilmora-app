@@ -111,7 +111,7 @@ export default function SessionsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const role = typeof user?.role === "string" ? user.role : undefined;
   const [when, setWhen] = useState<WhenFilter>("upcoming");
-  const { data: sessions = [], isLoading, error } = useSessions(when);
+  const { data: sessions = [], isLoading, isFetching, error, refetch } = useSessions(when);
   const { updateStatus } = useSessionMutations();
   const [busyId, setBusyId] = useState<number | null>(null);
 
@@ -163,21 +163,45 @@ export default function SessionsPage() {
         <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>
       </header>
 
-      <div className="flex flex-wrap gap-2">
-        {(["upcoming", "past", "all"] as const).map((w) => (
-          <button
-            key={w}
-            type="button"
-            onClick={() => setWhen(w)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize ${
-              when === w
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted"
-            }`}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          {(["upcoming", "past", "all"] as const).map((w) => (
+            <button
+              key={w}
+              type="button"
+              onClick={() => setWhen(w)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize ${
+                when === w
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {w}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          disabled={isFetching}
+          aria-label="Refresh sessions"
+          title="Refresh sessions"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+            aria-hidden
           >
-            {w}
-          </button>
-        ))}
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+            <path d="M21 3v6h-6" />
+          </svg>
+        </button>
       </div>
 
       {error ? (

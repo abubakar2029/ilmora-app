@@ -23,6 +23,7 @@ import { mergePendingMessages } from "@/lib/pending-messages";
 import { isConversationDetail } from "@/lib/messaging-api";
 import type { ChatMessage } from "@/lib/messaging-api";
 import type { PendingChatMessage } from "@/lib/pending-messages";
+import { queryKeys } from "@/lib/query-keys";
 
 function dateLabel(iso: string) {
   const d = new Date(iso);
@@ -90,9 +91,10 @@ export default function ChatWindow({ connectionId, onBack }: Props) {
     onIncomingMessage: handleIncomingMessage,
   });
 
-  const { data, isFetching, error, isSuccess, isError } = useConversation(connectionId, {
-    pollIntervalMs: wsConnected ? 12_000 : 5_000,
-  });
+  const { data, isFetching, error, isSuccess, isError, refetch: refetchConversation } =
+    useConversation(connectionId, {
+      pollIntervalMs: wsConnected ? 12_000 : 3_000,
+    });
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMarkedIdRef = useRef(0);
@@ -142,6 +144,11 @@ export default function ChatWindow({ connectionId, onBack }: Props) {
     [sendMessage],
   );
 
+  const handleRefresh = useCallback(() => {
+    void refetchConversation();
+    void queryClient.refetchQueries({ queryKey: queryKeys.messages.threads });
+  }, [queryClient, refetchConversation]);
+
   const waitingForConversation = !isSuccess && !isError;
 
   if (waitingForConversation) {
@@ -184,16 +191,38 @@ export default function ChatWindow({ connectionId, onBack }: Props) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-foreground">{name}</p>
-          <p className="text-xs text-muted-foreground">
-            {conversation.other_typing || wsOtherTyping ? (
-              <span className="font-medium text-primary">typing…</span>
-            ) : wsConnected ? (
-              <span className="text-emerald-600 dark:text-emerald-400">online</span>
-            ) : (
-              <span className="text-amber-600 dark:text-amber-400">live chat off — syncing every few seconds</span>
-            )}
-          </p>
+          {conversation.other_typing || wsOtherTyping || wsConnected ? (
+            <p className="text-xs text-muted-foreground">
+              {conversation.other_typing || wsOtherTyping ? (
+                <span className="font-medium text-primary">typing…</span>
+              ) : (
+                <span className="text-emerald-600 dark:text-emerald-400">online</span>
+              )}
+            </p>
+          ) : null}
         </div>
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isFetching}
+          aria-label="Refresh messages"
+          title="Refresh messages"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+            aria-hidden
+          >
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+            <path d="M21 3v6h-6" />
+          </svg>
+        </button>
       </header>
 
       <div className="flex-1 overflow-y-auto px-3 py-4">
