@@ -99,7 +99,7 @@ export default function BookSessionModal({
       open={open}
       onClose={onClose}
       title="Book a session"
-      description={`Pick an open hour from ${mentorLabel}'s weekly calendar. Both of you receive email and in-app confirmation.`}
+      description={`Choose a one-hour slot within ${mentorLabel}'s weekly hours. Only times they set on their dashboard can be booked.`}
       footer={
         <>
           <button
@@ -135,10 +135,21 @@ export default function BookSessionModal({
           </p>
         ) : noSlots ? (
           <p className="rounded-lg border border-border bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
-            No open slots in the next few weeks. Check back later or message the mentor to add hours.
+            No open slots in the next few weeks within this mentor&apos;s weekly hours. Check back later or
+            message them to adjust availability.
           </p>
         ) : (
-          <div className="max-h-64 space-y-4 overflow-y-auto pr-1">
+          <>
+            {data?.availability_summary ? (
+              <p className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-sm text-foreground">
+                <span className="font-semibold text-primary">Weekly hours: </span>
+                {data.availability_summary}
+              </p>
+            ) : null}
+            <p className="text-xs text-muted-foreground">
+              Each button is a one-hour session inside the mentor&apos;s saved availability.
+            </p>
+            <div className="max-h-64 space-y-4 overflow-y-auto pr-1">
             {slotsByDate.map(([day, daySlots]) => (
               <div key={day}>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -171,7 +182,8 @@ export default function BookSessionModal({
                 </ul>
               </div>
             ))}
-          </div>
+            </div>
+          </>
         )}
 
         <label className="block text-sm">

@@ -63,7 +63,8 @@ export default function AvailabilityCalendar({ slots, onChange, readOnly = false
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Add when you are generally available for students. Shown on your public mentor page.
+        Add when you are generally available for students. Connected students can book only within these hours
+        (shown on your public page).
       </p>
       {slots.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">

@@ -26,6 +26,10 @@ export type BookingSlotsResponse = {
   connection_id: number;
   mentor_id: number;
   has_availability: boolean;
+  /** Human-readable weekly hours, e.g. "4 hrs/week (Tue 18:00–20:00; …)". */
+  availability_summary?: string;
+  /** Mentor-configured weekly windows (read-only for students). */
+  weekly_slots?: { weekday: number; start: string; end: string }[];
   slots: BookableSlot[];
 };
 

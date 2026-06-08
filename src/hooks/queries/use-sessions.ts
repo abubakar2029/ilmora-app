@@ -17,7 +17,8 @@ export function useBookingSlots(connectionId: number | null, enabled: boolean) {
     queryKey: queryKeys.sessions.slots(connectionId ?? 0),
     queryFn: () => fetchBookingSlots(connectionId!),
     enabled: enabled && connectionId != null && connectionId > 0,
-    staleTime: 30 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 }
 

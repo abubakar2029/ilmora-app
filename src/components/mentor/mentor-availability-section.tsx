@@ -56,8 +56,7 @@ export default function MentorAvailabilitySection({ embedded = false }: Props) {
         <>
           <h2 className="text-lg font-semibold text-foreground">Weekly availability</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Add when you are generally available. Total hours are calculated automatically and shown to students
-            and used for AI matching.
+            Students can only book one-hour slots inside these windows. Hours are also used for AI matching.
           </p>
         </>
       ) : null}

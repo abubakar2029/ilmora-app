@@ -26,6 +26,8 @@ export function useUpdateAvailabilityMutation() {
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.availability.me, data);
       void queryClient.invalidateQueries({ queryKey: queryKeys.profile.me });
+      // Mentor changed weekly hours — refresh every student's book-session picker.
+      void queryClient.invalidateQueries({ queryKey: ["sessions", "slots"] });
     },
   });
 }
