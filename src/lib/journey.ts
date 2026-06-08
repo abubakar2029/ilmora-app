@@ -96,6 +96,9 @@ export function parseJourneyResponse(data: unknown): JourneyApiResponse {
 
 export function journeyToastForResult(parsed: JourneyApiResponse): { text: string; variant: "success" | "error" } {
   if (!parsed.is_demo) {
+    if (parsed.message) {
+      return { text: parsed.message, variant: "success" };
+    }
     return { text: "Journey updated with your personalized roadmap.", variant: "success" };
   }
   switch (parsed.demo_reason) {
@@ -108,7 +111,12 @@ export function journeyToastForResult(parsed: JourneyApiResponse): { text: strin
     case "missing_sdk":
       return { text: "Install google-generativeai in the backend Python environment.", variant: "error" };
     case "quota_exceeded":
-      return { text: "Gemini quota exceeded — check Google AI Studio billing.", variant: "error" };
+      return {
+        text:
+          parsed.message ||
+          "Gemini rate limit reached on all configured API keys. Try again later or add more keys on the server.",
+        variant: "error",
+      };
     case "model_error":
       return { text: "Gemini model not available — update GEMINI_MODEL in backend/.env.", variant: "error" };
     default:
