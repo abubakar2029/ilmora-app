@@ -14,7 +14,7 @@ export default function AdminGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      router.replace("/login?from=/admin");
+      router.replace("/about");
       return;
     }
     if (role !== "admin") {

@@ -55,7 +55,7 @@ export default function AdminHeader() {
                 type="button"
                 onClick={async () => {
                   await logout();
-                  router.push("/login");
+                  router.push("/about");
                   router.refresh();
                 }}
                 className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-border px-4 text-sm font-semibold leading-none text-foreground transition-colors hover:bg-muted"

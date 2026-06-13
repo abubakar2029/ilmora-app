@@ -14,6 +14,11 @@ function hasValidRefreshSession(request: NextRequest): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const authed = hasValidRefreshSession(request);
+
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL(authed ? "/journey" : "/about", request.url));
+  }
 
   const isProtected =
     pathname === "/dashboard" ||
@@ -28,10 +33,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!hasValidRefreshSession(request)) {
-    const login = new URL("/login", request.url);
-    login.searchParams.set("from", pathname);
-    return NextResponse.redirect(login);
+  if (!authed) {
+    return NextResponse.redirect(new URL("/about", request.url));
   }
 
   return NextResponse.next();
@@ -39,6 +42,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
     "/dashboard",
     "/dashboard/:path*",
     "/journey",

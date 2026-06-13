@@ -14,7 +14,7 @@ export default function MentorGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      router.replace("/login?from=/dashboard/my-stories");
+      router.replace("/about");
       return;
     }
     if (role !== "mentor") {

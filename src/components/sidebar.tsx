@@ -294,7 +294,7 @@ export default function Sidebar() {
                 onClick={async () => {
                   await logout();
                   setMobileOpen(false);
-                  router.push("/login");
+                  router.push("/about");
                   router.refresh();
                 }}
                 className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${collapsed ? "lg:justify-center lg:px-0" : ""}`}
